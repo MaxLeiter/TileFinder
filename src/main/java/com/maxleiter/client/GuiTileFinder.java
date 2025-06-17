@@ -2,6 +2,7 @@ package com.maxleiter.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.GuiConfirmOpenLink;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
@@ -14,20 +15,18 @@ import net.minecraft.item.Item;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.text.translation.I18n;
-import net.minecraftforge.fml.common.Loader;
-import net.minecraftforge.fml.common.ModContainer;
-
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Deque;
+import java.util.ArrayDeque;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Collections;
+import java.io.IOException;
 
 /**
  * Tile Finder main GUI – lists nearby tile entities with advanced grouping,
@@ -46,13 +45,30 @@ public class GuiTileFinder extends GuiScreen {
     private GuiTextField filterField;
     private Map<String, Integer> nameCollisionCount = new HashMap<>();
     private Map<String, Set<String>> nameToMods = new HashMap<>();
+    // search history
+    private static final Deque<String> history = new ArrayDeque<>();
+    private int histIndex = -1;
+
+    // suggestion caches
+    private Set<String> modSuggestions = new HashSet<>();
+    private Set<String> nameSuggestions = new HashSet<>();
 
     private enum GroupMode {
         NONE, NAME, MODID
     }
 
+    private enum SortMode {
+        DISTANCE, NAME, MODID
+    }
+
+    private static SortMode lastSort = SortMode.DISTANCE;
+    private SortMode sortMode = lastSort;
+
     private static GroupMode lastGroupMode = GroupMode.NONE; // remember between GUI opens
     private GroupMode groupMode = lastGroupMode;
+
+    // link bounds
+    private int linkBoundsX, linkBoundsY, linkBoundsW, linkBoundsH;
 
     // ---------------- init ----------------
     @Override
@@ -81,6 +97,9 @@ public class GuiTileFinder extends GuiScreen {
         buttonList.add(new ChipButton(2, 162, btnY, 18, 14, "+"));
         // group cycle
         buttonList.add(new ChipButton(3, 190, btnY, 70, 14, "Group: " + groupMode.name()));
+        // sort cycle button
+        int sortW = fontRenderer.getStringWidth("Sort: " + sortMode.name()) + 12;
+        buttonList.add(new ChipButton(4, 270, btnY, sortW, 14, "Sort: " + sortMode.name()));
     }
 
     // ---------------- tile list building ----------------
@@ -105,7 +124,7 @@ public class GuiTileFinder extends GuiScreen {
         if (groupMode == GroupMode.NAME || groupMode == GroupMode.MODID || autoGroupLarge) {
             java.util.function.Function<TileEntity, String> keyFunc = groupMode == GroupMode.MODID
                     ? te -> te.getBlockType().getRegistryName().getNamespace()
-                    : GuiTileFinder::getDisplayName;
+                    : GuiUtils::getDisplayName;
 
             raw.stream().collect(Collectors.groupingBy(keyFunc))
                     .forEach((name, list) -> {
@@ -141,7 +160,17 @@ public class GuiTileFinder extends GuiScreen {
             });
         }
 
-        tiles.sort(Comparator.comparingDouble(e -> e.distance));
+        switch (sortMode) {
+            case DISTANCE:
+                tiles.sort(Comparator.comparingDouble(e -> e.distance));
+                break;
+            case NAME:
+                tiles.sort(Comparator.comparing(e -> e.blockName.toLowerCase()));
+                break;
+            case MODID:
+                tiles.sort(Comparator.comparing(e -> e.modid));
+                break;
+        }
 
         // build collision map for display later
         nameCollisionCount.clear();
@@ -156,6 +185,14 @@ public class GuiTileFinder extends GuiScreen {
         int listHeight = listBottom - listTop;
         this.maxScroll = Math.max(0, tiles.size() * 20 - listHeight);
         this.scrollOffset = Math.min(scrollOffset, maxScroll);
+
+        // suggestions
+        modSuggestions.clear();
+        nameSuggestions.clear();
+        raw.forEach(te -> {
+            modSuggestions.add(te.getBlockType().getRegistryName().getNamespace());
+            nameSuggestions.add(GuiUtils.getDisplayName(te));
+        });
     }
 
     private boolean testFilters(TileEntry entry, String text, String mod) {
@@ -189,6 +226,14 @@ public class GuiTileFinder extends GuiScreen {
                 btn.displayString = "Group: " + groupMode.name();
                 refreshTileList();
                 break;
+            case 4:
+                sortMode = (sortMode == SortMode.DISTANCE) ? SortMode.NAME
+                        : (sortMode == SortMode.NAME) ? SortMode.MODID : SortMode.DISTANCE;
+                lastSort = sortMode;
+                btn.displayString = "Sort: " + sortMode.name();
+                btn.width = fontRenderer.getStringWidth(btn.displayString) + 12;
+                refreshTileList();
+                break;
         }
     }
 
@@ -215,6 +260,19 @@ public class GuiTileFinder extends GuiScreen {
 
         this.filterField.drawTextBox();
 
+        // top-right mod name + link
+        String linkTxt = "Tile Finder";
+        int linkWidth = fontRenderer.getStringWidth(linkTxt);
+        int linkX = width - PAD - linkWidth;
+        int linkY = PAD - 10;
+        fontRenderer.drawString(linkTxt, linkX, linkY, 0x66CCFF);
+
+        // remember bounds for click
+        linkBoundsX = linkX;
+        linkBoundsW = linkWidth;
+        linkBoundsY = linkY;
+        linkBoundsH = 8;
+
         int listTop = PAD + 24;
         int listBottom = this.height - 50;
 
@@ -235,9 +293,7 @@ public class GuiTileFinder extends GuiScreen {
                 // hover effect
                 boolean hover = mouseX >= cardLeft && mouseX <= cardRight && mouseY >= y && mouseY <= cardBottom;
                 if (hover) {
-                    double phase = (System.currentTimeMillis() % 1000L) / 1000.0;
-                    int alpha = (int) (0x55 + 0x33 * Math.sin(phase * Math.PI * 2));
-                    int col = (alpha << 24) | 0x3366FF;
+                    int col = hover ? 0xAA3366FF : 0x66000000;
                     bgColorTop = col;
                     bgColorBottom = col;
                 }
@@ -305,23 +361,78 @@ public class GuiTileFinder extends GuiScreen {
                 refreshTileList();
                 return;
             }
-            String coord = String.format("%d %d %d", entry.pos.getX(), entry.pos.getY(), entry.pos.getZ());
-            setClipboardString(coord);
             PathHighlighter.highlightTo(entry.pos);
-            if (mc.player != null) {
-                mc.player.sendMessage(new TextComponentString("§aCopied creds: " + coord));
-            }
+
             // close GUI after selection
             this.mc.displayGuiScreen(null);
+        }
+
+        // link click
+        if (mouseButton == 0 && mouseX >= linkBoundsX && mouseX <= linkBoundsX + linkBoundsW && mouseY >= linkBoundsY
+                && mouseY <= linkBoundsY + linkBoundsH) {
+            GuiConfirmOpenLink gui = new GuiConfirmOpenLink(this, "https://github.com/maxleiter/tilefinder", 0, true);
+            gui.disableSecurityWarning();
+            mc.displayGuiScreen(gui);
+            return;
         }
     }
 
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
-        if (filterField.textboxKeyTyped(typedChar, keyCode)) {
+        // Up/down history navigation (200/208)
+        if (keyCode == 200 || keyCode == 208) {
+            if (history.isEmpty())
+                return;
+            if (histIndex == -1) {
+                histIndex = history.size();
+            }
+            histIndex += (keyCode == 200 ? -1 : 1);
+            if (histIndex < 0)
+                histIndex = 0;
+            if (histIndex >= history.size())
+                histIndex = history.size() - 1;
+            String val = new ArrayList<>(history).get(histIndex);
+            filterField.setText(val);
             refreshTileList();
-        } else {
+            return;
+        }
+
+        // Tab completion (15)
+        if (keyCode == 15) {
+            String txt = filterField.getText();
+            if (txt.startsWith("@")) {
+                String sub = txt.substring(1).toLowerCase();
+                for (String m : modSuggestions) {
+                    if (m.toLowerCase().startsWith(sub)) {
+                        filterField.setText("@" + m);
+                        break;
+                    }
+                }
+            } else {
+                for (String n : nameSuggestions) {
+                    if (n.toLowerCase().startsWith(txt.toLowerCase())) {
+                        filterField.setText(n);
+                        break;
+                    }
+                }
+            }
+            refreshTileList();
+            return;
+        }
+
+        if (filterField.textboxKeyTyped(typedChar, keyCode))
+            refreshTileList();
+        else
             super.keyTyped(typedChar, keyCode);
+
+        // store history on Enter (28)
+        if (keyCode == 28) {
+            String txt = filterField.getText();
+            if (!txt.isEmpty() && (history.isEmpty() || !history.peekLast().equals(txt)))
+                history.addLast(txt);
+            if (history.size() > 20)
+                history.removeFirst();
+            histIndex = -1;
         }
     }
 
@@ -345,108 +456,12 @@ public class GuiTileFinder extends GuiScreen {
         return false;
     }
 
-    private static String getDisplayName(TileEntity te) {
-        // 1. If tile entity exposes a display name, use it
-        // try {
-        // ITextComponent comp = te.getDisplayName();
-        // if (comp != null) {
-        // System.out.println("comp: " + comp.getFormattedText());
-        // return comp.getFormattedText();
-        // }
-        // } catch (Throwable ignored) {
-        // }
-
-        // 2. Try ItemStack display name
-        Item item = Item.getItemFromBlock(te.getBlockType());
-        if (item != null && item != Item.getItemById(0)) {
-            System.out.println("item: " + new ItemStack(item).getDisplayName());
-            return new ItemStack(item).getDisplayName();
-        }
-
-        // 3. Fallback: translate block's unlocalized name
-        System.out.println("fallback: " + I18n.translateToLocal(te.getBlockType().getLocalizedName()));
-        return I18n.translateToLocal(te.getBlockType().getLocalizedName());
-    }
-
-    private static class TileEntry {
-        String blockName;
-        final BlockPos pos;
-        final double distance;
-        final int count;
-        final ItemStack icon;
-        final String modid;
-        final String modName;
-
-        TileEntry(TileEntity te, int count, String forcedName) {
-            this.blockName = (forcedName != null) ? forcedName : GuiTileFinder.getDisplayName(te);
-            this.pos = te.getPos();
-            this.distance = Math.sqrt(Minecraft.getMinecraft().player.getPosition().distanceSq(pos));
-            this.count = count;
-            this.modid = te.getBlockType().getRegistryName().getNamespace();
-            this.modName = lookupModName(this.modid);
-
-            // Special handling for chests to show proper icon
-            if (te instanceof TileEntityChest) {
-                // Check if part of double chest
-                for (EnumFacing facing : EnumFacing.HORIZONTALS) {
-                    BlockPos adjacent = te.getPos().offset(facing);
-                    if (te.getWorld().getTileEntity(adjacent) instanceof TileEntityChest) {
-                        this.blockName = "Large Chest";
-                        break;
-                    }
-                }
-            }
-
-            Item item = Item.getItemFromBlock(te.getBlockType());
-            this.icon = (item != null) ? new ItemStack(item) : ItemStack.EMPTY;
-        }
-
-        // Convenience constructor keeping previous usages
-        TileEntry(TileEntity te, int count) {
-            this(te, count, null);
-        }
-
-        private String lookupModName(String id) {
-            return lookupModNameStatic(id);
-        }
+    private static String lookupModNameStatic(String id) {
+        return GuiUtils.lookupModName(id);
     }
 
     @Override
     public boolean doesGuiPauseGame() {
         return false;
-    }
-
-    /**
-     * A minimal pill-style button that looks less like vanilla
-     * Minecraft: flat colour with subtle hover tint.
-     */
-    private static class ChipButton extends GuiButton {
-        ChipButton(int id, int x, int y, int w, int h, String txt) {
-            super(id, x, y, w, h, txt);
-        }
-
-        @Override
-        public void drawButton(Minecraft mc, int mouseX, int mouseY, float partialTicks) {
-            if (!this.visible)
-                return;
-            this.hovered = mouseX >= this.x && mouseX < this.x + this.width && mouseY >= this.y
-                    && mouseY < this.y + this.height;
-            int bg = this.hovered ? 0xFF3C6BFF : 0xFF2E2E2E;
-            int fg = 0xFFFFFF;
-
-            GlStateManager.disableTexture2D();
-            drawRect(this.x, this.y, this.x + this.width, this.y + this.height, bg);
-            GlStateManager.enableTexture2D();
-
-            int textX = this.x + (this.width - mc.fontRenderer.getStringWidth(this.displayString)) / 2;
-            int textY = this.y + (this.height - 8) / 2;
-            mc.fontRenderer.drawString(this.displayString, textX, textY, fg);
-        }
-    }
-
-    // static util for mod friendly name
-    private static String lookupModNameStatic(String id) {
-        ModContainer mc = Loader.instance().getIndexedModList().get(id);
-        return mc != null ? mc.getName() : id;
     }
 }
