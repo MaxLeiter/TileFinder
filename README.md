@@ -4,3 +4,4 @@ A simple mod for helping you locate tile entities in your world. Useful for modp
 
 Repo is based on https://github.com/quat1024/modern-forge-1.12-template, vibecoded with v0 and OpenAI o3. 
 
+![screenshot](./screenshot.png)

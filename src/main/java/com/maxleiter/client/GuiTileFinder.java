@@ -13,82 +13,88 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Item;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.tileentity.TileEntityChest;
-import net.minecraft.block.BlockChest;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.text.translation.I18n;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.inventory.IInventory;
+import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.ModContainer;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import com.maxleiter.client.PathHighlighter;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Collections;
 
 /**
- * Very simple GUI that lists nearby tile entities in a scrollable text list.
- * Press Escape or the Done button to close.
+ * Tile Finder main GUI – lists nearby tile entities with advanced grouping,
+ * filtering (`@modid` supported), scroll-bar, icon preview, and modern UI.
  */
 public class GuiTileFinder extends GuiScreen {
 
-    private int radius = 32; // scan radius (modifiable)
+    // ---------------- configuration ----------------
+    private int radius = 32; // scan radius (modifiable with +- buttons)
+    private static final int PAD = 16; // UI padding
 
+    // ---------------- state ----------------
     private final List<TileEntry> tiles = new ArrayList<>();
-
     private int scrollOffset = 0;
     private int maxScroll = 0;
-
     private GuiTextField filterField;
+    private Map<String, Integer> nameCollisionCount = new HashMap<>();
+    private Map<String, Set<String>> nameToMods = new HashMap<>();
 
     private enum GroupMode {
         NONE, NAME, MODID
     }
 
-    private GroupMode groupMode = GroupMode.NONE;
+    private static GroupMode lastGroupMode = GroupMode.NONE; // remember between GUI opens
+    private GroupMode groupMode = lastGroupMode;
 
-    private static final int PAD = 16; // UI padding
-
+    // ---------------- init ----------------
     @Override
     public void initGui() {
-        // Enable key repeats if LWJGL keyboard is present (avoids compile-time
-        // dependency)
         try {
-            Class<?> keyboard = Class.forName("org.lwjgl.input.Keyboard");
-            keyboard.getMethod("enableRepeatEvents", boolean.class).invoke(null, true);
+            Class.forName("org.lwjgl.input.Keyboard")
+                    .getMethod("enableRepeatEvents", boolean.class).invoke(null, true);
         } catch (Throwable ignored) {
         }
-        this.filterField = new GuiTextField(100, this.fontRenderer, PAD, PAD, 120, 15);
-        this.filterField.setMaxStringLength(50);
-        this.filterField.setFocused(false);
+
+        filterField = new GuiTextField(100, this.fontRenderer, PAD, PAD, 120, 15);
+        filterField.setMaxStringLength(50);
+        filterField.setFocused(false);
 
         refreshTileList();
-
-        this.buttonList.clear();
-        // Done button (chip style)
-        this.buttonList.add(new ChipButton(0, this.width / 2 - 40, this.height - 30, 80, 18, "Done"));
-        int btnY = PAD;
-        this.buttonList.add(new ChipButton(1, 140, btnY, 18, 14, "-"));
-        this.buttonList.add(new ChipButton(2, 162, btnY, 18, 14, "+"));
-        // Group toggle
-        this.buttonList.add(new ChipButton(3, 190, btnY, 70, 14, "Group: NONE"));
+        buildButtons();
     }
 
+    private void buildButtons() {
+        buttonList.clear();
+        // Done
+        buttonList.add(new ChipButton(0, width / 2 - 40, height - 30, 80, 18, "Done"));
+        int btnY = PAD;
+        // radius – / +
+        buttonList.add(new ChipButton(1, 140, btnY, 18, 14, "-"));
+        buttonList.add(new ChipButton(2, 162, btnY, 18, 14, "+"));
+        // group cycle
+        buttonList.add(new ChipButton(3, 190, btnY, 70, 14, "Group: " + groupMode.name()));
+    }
+
+    // ---------------- tile list building ----------------
     private void refreshTileList() {
-        this.tiles.clear();
+        tiles.clear();
         if (mc.player == null) {
             return;
         }
         BlockPos playerPos = mc.player.getPosition();
         String filterRaw = filterField != null ? filterField.getText() : "";
         String filter = filterRaw.toLowerCase();
-        String modFilter = null;
-        if (filter.startsWith("@")) {
-            modFilter = filter.substring(1);
-        }
+        String modFilter = filter.startsWith("@") ? filter.substring(1).toLowerCase() : null;
+        final String modFilterFinal = modFilter; // lambda capture
 
-        final String modFilterFinal = modFilter;
         List<TileEntity> raw = Minecraft.getMinecraft().world.loadedTileEntityList.stream()
                 .filter(te -> te.getPos().distanceSq(playerPos) <= radius * radius)
                 .filter(te -> !isSecondaryChest(te)) // filter out secondary chest halves
@@ -99,7 +105,7 @@ public class GuiTileFinder extends GuiScreen {
         if (groupMode == GroupMode.NAME || groupMode == GroupMode.MODID || autoGroupLarge) {
             java.util.function.Function<TileEntity, String> keyFunc = groupMode == GroupMode.MODID
                     ? te -> te.getBlockType().getRegistryName().getNamespace()
-                    : te -> getDisplayName(te);
+                    : GuiTileFinder::getDisplayName;
 
             raw.stream().collect(Collectors.groupingBy(keyFunc))
                     .forEach((name, list) -> {
@@ -112,32 +118,38 @@ public class GuiTileFinder extends GuiScreen {
                                                                                              // groups
                                 list.forEach(te -> {
                                     TileEntry e = new TileEntry(te, 1, null);
-                                    if (e.blockName.toLowerCase().contains(filter))
+                                    if (testFilters(e, filter, modFilterFinal))
                                         tiles.add(e);
                                 });
                             } else {
-                                String label = (groupMode == GroupMode.MODID) ? name : null;
+                                String label = null;
+                                if (groupMode == GroupMode.MODID) {
+                                    String modFriendly = lookupModNameStatic(name);
+                                    label = modFriendly + " (" + name + ")";
+                                }
                                 TileEntry entry = new TileEntry(closest, cnt, label);
-                                if (entry.blockName.toLowerCase().contains(filter))
+                                if (testFilters(entry, filter, modFilterFinal))
                                     tiles.add(entry);
                             }
                         }
                     });
         } else {
             raw.forEach(te -> {
-                if (modFilterFinal != null) {
-                    String ns = te.getBlockType().getRegistryName().getNamespace().toLowerCase();
-                    if (!ns.contains(modFilterFinal))
-                        return;
-                }
                 TileEntry entry = new TileEntry(te, 1, null);
-                if (modFilterFinal == null && !entry.blockName.toLowerCase().contains(filter))
-                    return;
-                tiles.add(entry);
+                if (testFilters(entry, filter, modFilterFinal))
+                    tiles.add(entry);
             });
         }
 
         tiles.sort(Comparator.comparingDouble(e -> e.distance));
+
+        // build collision map for display later
+        nameCollisionCount.clear();
+        nameToMods.clear();
+        for (TileEntry e : tiles) {
+            nameCollisionCount.merge(e.blockName, 1, Integer::sum);
+            nameToMods.computeIfAbsent(e.blockName, k -> new HashSet<>()).add(e.modid);
+        }
 
         int listTop = PAD + 24;
         int listBottom = this.height - 50;
@@ -146,32 +158,37 @@ public class GuiTileFinder extends GuiScreen {
         this.scrollOffset = Math.min(scrollOffset, maxScroll);
     }
 
+    private boolean testFilters(TileEntry entry, String text, String mod) {
+        if (mod != null) { // mod filter overrides text filter
+            return entry.modid.toLowerCase().contains(mod);
+        }
+        return entry.blockName.toLowerCase().contains(text);
+    }
+
+    // ---------------- event handling ----------------
     @Override
-    protected void actionPerformed(GuiButton button) throws IOException {
-        if (button.id == 0) {
-            this.mc.displayGuiScreen(null);
-        } else if (button.id == 1) { // radius -
-            if (radius > 8)
-                radius -= 8;
-            refreshTileList();
-        } else if (button.id == 2) { // radius +
-            if (radius < 128)
-                radius += 8;
-            refreshTileList();
-        } else if (button.id == 3) { // cycle grouping mode
-            switch (groupMode) {
-                case NONE:
-                    groupMode = GroupMode.NAME;
-                    break;
-                case NAME:
-                    groupMode = GroupMode.MODID;
-                    break;
-                case MODID:
-                    groupMode = GroupMode.NONE;
-                    break;
-            }
-            button.displayString = "Group: " + groupMode.name();
-            refreshTileList();
+    protected void actionPerformed(GuiButton btn) throws IOException {
+        switch (btn.id) {
+            case 0:
+                this.mc.displayGuiScreen(null);
+                break;
+            case 1:
+                if (radius > 8)
+                    radius -= 8;
+                refreshTileList();
+                break;
+            case 2:
+                if (radius < 128)
+                    radius += 8;
+                refreshTileList();
+                break;
+            case 3:
+                groupMode = (groupMode == GroupMode.NONE) ? GroupMode.NAME
+                        : (groupMode == GroupMode.NAME) ? GroupMode.MODID : GroupMode.NONE;
+                lastGroupMode = groupMode;
+                btn.displayString = "Group: " + groupMode.name();
+                refreshTileList();
+                break;
         }
     }
 
@@ -180,16 +197,12 @@ public class GuiTileFinder extends GuiScreen {
         super.handleMouseInput();
         int delta = 0;
         try {
-            Class<?> mouseCls = Class.forName("org.lwjgl.input.Mouse");
-            delta = (Integer) mouseCls.getMethod("getDWheel").invoke(null);
+            delta = (Integer) Class.forName("org.lwjgl.input.Mouse").getMethod("getDWheel").invoke(null);
         } catch (Throwable ignored) {
         }
         if (delta != 0) {
             scrollOffset -= Integer.signum(delta) * 12;
-            if (scrollOffset < 0)
-                scrollOffset = 0;
-            if (scrollOffset > maxScroll)
-                scrollOffset = maxScroll;
+            scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
         }
     }
 
@@ -238,7 +251,9 @@ public class GuiTileFinder extends GuiScreen {
                 }
 
                 int textX = cardLeft + 24;
-                String namePart = entry.blockName + (entry.count > 1 ? " x" + entry.count : "");
+                boolean collideAcrossMods = nameToMods.getOrDefault(entry.blockName, Collections.emptySet()).size() > 1;
+                String namePart = entry.blockName + (collideAcrossMods ? " (" + entry.modName + ")" : "")
+                        + (entry.count > 1 ? " x" + entry.count : "");
                 this.fontRenderer.drawString(namePart, textX, y + 2, 0xFFFFFF);
                 String coordPart = String.format("(%d,%d,%d) %.1fm", entry.pos.getX(), entry.pos.getY(),
                         entry.pos.getZ(), entry.distance);
@@ -278,25 +293,23 @@ public class GuiTileFinder extends GuiScreen {
         int index = relativeY / 20;
         if (index >= 0 && index < tiles.size()) {
             TileEntry entry = tiles.get(index);
-            if (entry.count > 1) {
+            if (entry.count > 1 && groupMode != GroupMode.NONE) {
                 // drill down
-                if (groupMode != GroupMode.NONE) {
-                    if (groupMode == GroupMode.MODID) {
-                        filterField.setText("@" + entry.blockName);
-                    } else {
-                        filterField.setText(entry.blockName);
-                    }
-                    groupMode = GroupMode.NONE;
-                    ((ChipButton) this.buttonList.get(3)).displayString = "Group: NONE";
-                    refreshTileList();
-                    return;
+                if (groupMode == GroupMode.MODID) {
+                    filterField.setText("@" + entry.modid.toLowerCase());
+                } else {
+                    filterField.setText(entry.blockName);
                 }
+                groupMode = GroupMode.NONE;
+                ((ChipButton) this.buttonList.get(3)).displayString = "Group: NONE";
+                refreshTileList();
+                return;
             }
             String coord = String.format("%d %d %d", entry.pos.getX(), entry.pos.getY(), entry.pos.getZ());
             setClipboardString(coord);
             PathHighlighter.highlightTo(entry.pos);
             if (mc.player != null) {
-                mc.player.sendMessage(new TextComponentString("§aCopied coords: " + coord));
+                mc.player.sendMessage(new TextComponentString("§aCopied creds: " + coord));
             }
             // close GUI after selection
             this.mc.displayGuiScreen(null);
@@ -334,21 +347,24 @@ public class GuiTileFinder extends GuiScreen {
 
     private static String getDisplayName(TileEntity te) {
         // 1. If tile entity exposes a display name, use it
-        try {
-            ITextComponent comp = te.getDisplayName();
-            if (comp != null) {
-                return comp.getFormattedText();
-            }
-        } catch (Throwable ignored) {
-        }
+        // try {
+        // ITextComponent comp = te.getDisplayName();
+        // if (comp != null) {
+        // System.out.println("comp: " + comp.getFormattedText());
+        // return comp.getFormattedText();
+        // }
+        // } catch (Throwable ignored) {
+        // }
 
         // 2. Try ItemStack display name
         Item item = Item.getItemFromBlock(te.getBlockType());
         if (item != null && item != Item.getItemById(0)) {
+            System.out.println("item: " + new ItemStack(item).getDisplayName());
             return new ItemStack(item).getDisplayName();
         }
 
         // 3. Fallback: translate block's unlocalized name
+        System.out.println("fallback: " + I18n.translateToLocal(te.getBlockType().getLocalizedName()));
         return I18n.translateToLocal(te.getBlockType().getLocalizedName());
     }
 
@@ -358,12 +374,16 @@ public class GuiTileFinder extends GuiScreen {
         final double distance;
         final int count;
         final ItemStack icon;
+        final String modid;
+        final String modName;
 
         TileEntry(TileEntity te, int count, String forcedName) {
             this.blockName = (forcedName != null) ? forcedName : GuiTileFinder.getDisplayName(te);
             this.pos = te.getPos();
             this.distance = Math.sqrt(Minecraft.getMinecraft().player.getPosition().distanceSq(pos));
             this.count = count;
+            this.modid = te.getBlockType().getRegistryName().getNamespace();
+            this.modName = lookupModName(this.modid);
 
             // Special handling for chests to show proper icon
             if (te instanceof TileEntityChest) {
@@ -384,6 +404,10 @@ public class GuiTileFinder extends GuiScreen {
         // Convenience constructor keeping previous usages
         TileEntry(TileEntity te, int count) {
             this(te, count, null);
+        }
+
+        private String lookupModName(String id) {
+            return lookupModNameStatic(id);
         }
     }
 
@@ -418,5 +442,11 @@ public class GuiTileFinder extends GuiScreen {
             int textY = this.y + (this.height - 8) / 2;
             mc.fontRenderer.drawString(this.displayString, textX, textY, fg);
         }
+    }
+
+    // static util for mod friendly name
+    private static String lookupModNameStatic(String id) {
+        ModContainer mc = Loader.instance().getIndexedModList().get(id);
+        return mc != null ? mc.getName() : id;
     }
 }
