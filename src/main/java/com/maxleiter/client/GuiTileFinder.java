@@ -1,4 +1,4 @@
-package com.example.client;
+package com.maxleiter.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
@@ -7,7 +7,6 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.client.gui.GuiTextField;
-import com.example.client.PathHighlighter;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.RenderItem;
 import net.minecraft.item.ItemStack;
@@ -25,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import com.maxleiter.client.PathHighlighter;
 
 /**
  * Very simple GUI that lists nearby tile entities in a scrollable text list.

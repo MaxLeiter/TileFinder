@@ -1,4 +1,4 @@
-package com.example.client;
+package com.maxleiter.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.EnumParticleTypes;

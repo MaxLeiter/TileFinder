@@ -1,6 +1,7 @@
-package com.example;
+package com.maxleiter;
 
-import com.example.client.GuiTileFinder;
+import com.maxleiter.client.GuiTileFinder;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
@@ -56,15 +57,15 @@ public class TileFinderMod {
                     Minecraft.getMinecraft().displayGuiScreen(new GuiTileFinder());
                 }
                 if (clearPathKey.isPressed()) {
-                    com.example.client.PathHighlighter.clear();
+                    com.maxleiter.client.PathHighlighter.clear();
                 }
             }
 
             @SubscribeEvent
             public void onInteract(PlayerInteractEvent.RightClickBlock evt) {
-                if (evt.getWorld().isRemote && com.example.client.PathHighlighter.isActive()) {
-                    if (evt.getPos().equals(com.example.client.PathHighlighter.getTargetPos())) {
-                        com.example.client.PathHighlighter.clear();
+                if (evt.getWorld().isRemote && com.maxleiter.client.PathHighlighter.isActive()) {
+                    if (evt.getPos().equals(com.maxleiter.client.PathHighlighter.getTargetPos())) {
+                        com.maxleiter.client.PathHighlighter.clear();
                     }
                 }
             }
