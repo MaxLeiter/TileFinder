@@ -2,7 +2,6 @@ package com.maxleiter.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiConfirmOpenLink;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
@@ -27,6 +26,9 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.Collections;
 import java.io.IOException;
+import net.minecraft.client.gui.GuiConfirmOpenLink;
+import java.net.URI;
+import java.awt.Desktop;
 
 /**
  * Tile Finder main GUI – lists nearby tile entities with advanced grouping,
@@ -67,9 +69,6 @@ public class GuiTileFinder extends GuiScreen {
     private static GroupMode lastGroupMode = GroupMode.NONE; // remember between GUI opens
     private GroupMode groupMode = lastGroupMode;
 
-    // link bounds
-    private int linkBoundsX, linkBoundsY, linkBoundsW, linkBoundsH;
-
     // ---------------- init ----------------
     @Override
     public void initGui() {
@@ -100,6 +99,10 @@ public class GuiTileFinder extends GuiScreen {
         // sort cycle button
         int sortW = fontRenderer.getStringWidth("Sort: " + sortMode.name()) + 12;
         buttonList.add(new ChipButton(4, 270, btnY, sortW, 14, "Sort: " + sortMode.name()));
+        // GitHub link button top right
+        String linkLabel = "TileFinder ↗";
+        int linkW = fontRenderer.getStringWidth(linkLabel) + 8;
+        buttonList.add(new ChipButton(5, width - linkW - PAD, btnY, linkW, 14, linkLabel));
     }
 
     // ---------------- tile list building ----------------
@@ -234,6 +237,16 @@ public class GuiTileFinder extends GuiScreen {
                 btn.width = fontRenderer.getStringWidth(btn.displayString) + 12;
                 refreshTileList();
                 break;
+            case 5:
+                mc.displayGuiScreen(new GuiConfirmOpenLink((result, id) -> {
+                    mc.displayGuiScreen(result ? this : null);
+                    if (result)
+                        try {
+                            Desktop.getDesktop().browse(URI.create("https://github.com/maxleiter/tilefinder"));
+                        } catch (Exception ignored) {
+                        }
+                }, "https://github.com/maxleiter/tilefinder", 0, true));
+                break;
         }
     }
 
@@ -259,19 +272,6 @@ public class GuiTileFinder extends GuiScreen {
         this.fontRenderer.drawString("Rad: " + radius, 140, PAD - 10, 0xFFFFFF);
 
         this.filterField.drawTextBox();
-
-        // top-right mod name + link
-        String linkTxt = "Tile Finder";
-        int linkWidth = fontRenderer.getStringWidth(linkTxt);
-        int linkX = width - PAD - linkWidth;
-        int linkY = PAD - 10;
-        fontRenderer.drawString(linkTxt, linkX, linkY, 0x66CCFF);
-
-        // remember bounds for click
-        linkBoundsX = linkX;
-        linkBoundsW = linkWidth;
-        linkBoundsY = linkY;
-        linkBoundsH = 8;
 
         int listTop = PAD + 24;
         int listBottom = this.height - 50;
@@ -365,15 +365,6 @@ public class GuiTileFinder extends GuiScreen {
 
             // close GUI after selection
             this.mc.displayGuiScreen(null);
-        }
-
-        // link click
-        if (mouseButton == 0 && mouseX >= linkBoundsX && mouseX <= linkBoundsX + linkBoundsW && mouseY >= linkBoundsY
-                && mouseY <= linkBoundsY + linkBoundsH) {
-            GuiConfirmOpenLink gui = new GuiConfirmOpenLink(this, "https://github.com/maxleiter/tilefinder", 0, true);
-            gui.disableSecurityWarning();
-            mc.displayGuiScreen(gui);
-            return;
         }
     }
 

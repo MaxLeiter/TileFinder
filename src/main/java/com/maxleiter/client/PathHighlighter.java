@@ -14,6 +14,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import com.maxleiter.common.TileFinderConfig;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -49,10 +50,10 @@ public class PathHighlighter {
         double dy = end.y - start.y;
         double dz = end.z - start.z;
         double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        int steps = Math.max(1, Math.min(240, (int) (dist * 8))); // denser for smoother
+        int steps = Math.max(1, Math.min(240, (int) (dist * 8)));
         for (int i = 0; i <= steps; i++) {
             double t = i / (double) steps;
-            double arc = Math.sin(Math.PI * t) * Math.min(10, dist / 4); // higher arc, no wobble
+            double arc = Math.sin(Math.PI * t) * Math.min(TileFinderConfig.arcScale, dist / 4);
             points.add(new Vec3d(start.x + dx * t, start.y + dy * t + arc, start.z + dz * t));
         }
     }
@@ -100,6 +101,8 @@ public class PathHighlighter {
             GlStateManager.disableDepth();
             GlStateManager.glLineWidth(4F);
 
+            if (!TileFinderConfig.enableBeam)
+                return;
             float time = mc.player.ticksExisted + evt.getPartialTicks();
 
             java.util.List<Vec3d> pts = new java.util.ArrayList<>(points);
@@ -138,7 +141,7 @@ public class PathHighlighter {
     }
 
     private static void renderHelix(java.util.List<Vec3d> pts, Vec3d cam, float time, float phaseOffset) {
-        double radius = 0.25;
+        double radius = TileFinderConfig.helixRadius;
         GlStateManager.glLineWidth(2F);
         Tessellator tess = Tessellator.getInstance();
         BufferBuilder buf = tess.getBuffer();
@@ -148,7 +151,7 @@ public class PathHighlighter {
         for (Vec3d p : pts) {
             float t = (float) idx / (float) pts.size();
             // simple circular offset in XZ plane
-            double angle = t * Math.PI * 8 + time * 0.15 + phaseOffset;
+            double angle = t * Math.PI * 8 + time * TileFinderConfig.helixSpeed + phaseOffset;
             double offX = Math.cos(angle) * radius;
             double offZ = Math.sin(angle) * radius;
             buf.pos(p.x + offX - cam.x, p.y - cam.y, p.z + offZ - cam.z).color(50, 200, 255, 180).endVertex();

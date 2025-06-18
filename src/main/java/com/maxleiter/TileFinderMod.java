@@ -1,6 +1,8 @@
 package com.maxleiter;
 
 import com.maxleiter.client.GuiTileFinder;
+import com.maxleiter.common.TileFinderConfig;
+import java.io.File;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.settings.KeyBinding;
@@ -13,13 +15,14 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 
 /**
  * A minimal Forge 1.12 mod that lets the player open a GUI listing nearby
  * {@link net.minecraft.tileentity.TileEntity TileEntities}. The GUI is opened
  * with a key (binding default "P").
  */
-@Mod(modid = TileFinderMod.MODID, name = TileFinderMod.NAME, version = TileFinderMod.VERSION, acceptableRemoteVersions = "*")
+@Mod(modid = TileFinderMod.MODID, name = TileFinderMod.NAME, version = TileFinderMod.VERSION, acceptableRemoteVersions = "*", guiFactory = "com.maxleiter.client.TileFinderGuiFactory")
 public class TileFinderMod {
     public static final String MODID = "tilefinder";
     public static final String NAME = "Tile Finder";
@@ -30,6 +33,7 @@ public class TileFinderMod {
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent e) {
+        TileFinderConfig.load(new File(e.getModConfigurationDirectory(), "tilefinder.cfg"));
     }
 
     @Mod.EventHandler
@@ -68,6 +72,12 @@ public class TileFinderMod {
                         com.maxleiter.client.PathHighlighter.clear();
                     }
                 }
+            }
+
+            @SubscribeEvent
+            public void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent evt) {
+                if (evt.getModID().equals(MODID))
+                    TileFinderConfig.sync();
             }
         });
     }
