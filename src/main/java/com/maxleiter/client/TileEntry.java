@@ -17,12 +17,14 @@ class TileEntry {
     final ItemStack icon;
     final String modid;
     final String modName;
+    final String registry;
 
     TileEntry(TileEntity te, int count, String forced) {
         this.blockName = forced != null ? forced : GuiUtils.getDisplayName(te);
         this.pos = te.getPos();
         this.distance = Math.sqrt(Minecraft.getMinecraft().player.getPosition().distanceSq(pos));
         this.count = count;
+        this.registry = te.getBlockType().getRegistryName().toString();
         this.modid = te.getBlockType().getRegistryName().getNamespace();
         this.modName = GuiUtils.lookupModName(modid);
         if (te instanceof TileEntityChest) {

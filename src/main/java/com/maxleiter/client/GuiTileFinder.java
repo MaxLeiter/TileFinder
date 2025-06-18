@@ -22,13 +22,14 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Deque;
 import java.util.ArrayDeque;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.Collections;
 import java.io.IOException;
 import net.minecraft.client.gui.GuiConfirmOpenLink;
 import java.net.URI;
 import java.awt.Desktop;
+import java.util.HashSet;
+import java.util.Set;
+import com.maxleiter.common.TileFinderConfig;
 
 /**
  * Tile Finder main GUI – lists nearby tile entities with advanced grouping,
@@ -55,8 +56,11 @@ public class GuiTileFinder extends GuiScreen {
     private Set<String> modSuggestions = new HashSet<>();
     private Set<String> nameSuggestions = new HashSet<>();
 
+    // favourites by block registry name
+    private static final Set<String> favorites = TileFinderConfig.favorites; // will store dim:x:y:z
+
     private enum GroupMode {
-        NONE, NAME, MODID
+        NONE, FAV, NAME, MODID
     }
 
     private enum SortMode {
@@ -119,7 +123,9 @@ public class GuiTileFinder extends GuiScreen {
 
         List<TileEntity> raw = Minecraft.getMinecraft().world.loadedTileEntityList.stream()
                 .filter(te -> te.getPos().distanceSq(playerPos) <= radius * radius)
-                .filter(te -> !isSecondaryChest(te)) // filter out secondary chest halves
+                .filter(te -> !isSecondaryChest(te))
+                .filter(te -> groupMode != GroupMode.FAV
+                        || favorites.contains(posKey(new TileEntry(te, 1, null))))
                 .collect(Collectors.toList());
 
         boolean autoGroupLarge = groupMode == GroupMode.NONE;
@@ -223,8 +229,9 @@ public class GuiTileFinder extends GuiScreen {
                 refreshTileList();
                 break;
             case 3:
-                groupMode = (groupMode == GroupMode.NONE) ? GroupMode.NAME
-                        : (groupMode == GroupMode.NAME) ? GroupMode.MODID : GroupMode.NONE;
+                groupMode = (groupMode == GroupMode.NONE) ? GroupMode.FAV
+                        : (groupMode == GroupMode.FAV) ? GroupMode.NAME
+                                : (groupMode == GroupMode.NAME) ? GroupMode.MODID : GroupMode.NONE;
                 lastGroupMode = groupMode;
                 btn.displayString = "Group: " + groupMode.name();
                 refreshTileList();
@@ -314,6 +321,16 @@ public class GuiTileFinder extends GuiScreen {
                 String coordPart = String.format("(%d,%d,%d) %.1fm", entry.pos.getX(), entry.pos.getY(),
                         entry.pos.getZ(), entry.distance);
                 this.fontRenderer.drawString(coordPart, textX, y + 11, 0xAAAAAA);
+
+                // star icon region
+                int starX = cardRight - 18;
+                int starY = y + 0;
+                boolean isFav = favorites.contains(posKey(entry));
+                GlStateManager.pushMatrix();
+                GlStateManager.translate(starX, starY, 0);
+                GlStateManager.scale(1.6f, 1.6f, 1);
+                drawString(fontRenderer, isFav ? "★" : "☆", 0, 0, isFav ? 0xFFFF55 : 0xFFFFFF);
+                GlStateManager.popMatrix();
             }
             y += 20;
             idx++;
@@ -347,6 +364,26 @@ public class GuiTileFinder extends GuiScreen {
         if (relativeY < 0)
             return;
         int index = relativeY / 20;
+
+        // star toggle first
+        int cardLeft = PAD - 4;
+        int cardRight = width - PAD + 4;
+        int starStart = cardRight - 20;
+        int starEnd = cardRight - 4;
+        int rowY = PAD + 24 - scrollOffset + index * 20;
+        if (mouseX >= starStart && mouseX <= starEnd && mouseY >= rowY && mouseY <= rowY + 16) {
+            TileEntry entry = tiles.get(index);
+            String key = posKey(entry);
+            if (favorites.contains(key))
+                favorites.remove(key);
+            else
+                favorites.add(key);
+            com.maxleiter.common.TileFinderConfig.saveFavorites();
+            refreshTileList();
+            return;
+        }
+
+        // proceed with normal selection
         if (index >= 0 && index < tiles.size()) {
             TileEntry entry = tiles.get(index);
             if (entry.count > 1 && groupMode != GroupMode.NONE) {
@@ -454,5 +491,9 @@ public class GuiTileFinder extends GuiScreen {
     @Override
     public boolean doesGuiPauseGame() {
         return false;
+    }
+
+    private String posKey(TileEntry e) {
+        return mc.world.provider.getDimension() + ":" + e.pos.getX() + ":" + e.pos.getY() + ":" + e.pos.getZ();
     }
 }
