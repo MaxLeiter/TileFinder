@@ -23,7 +23,7 @@ public final class KeyBindings {
     }
 
     public static final KeyMapping OPEN_GUI = new KeyMapping("key.tilefinder.open", InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_BACKSPACE, "key.categories.tilefinder");
+            GLFW.GLFW_KEY_BACKSLASH, "key.categories.tilefinder");
     public static final KeyMapping CLEAR_PATH = new KeyMapping("key.tilefinder.clear", InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_O, "key.categories.tilefinder");
 
