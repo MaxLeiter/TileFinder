@@ -6,11 +6,16 @@ For neoforge and Minecraft 1.21.1.
 
 For the Forge 1.12.1 version, see the `1.12.1/forge` branch.
 
-A simple mod for helping you locate tile/block entities in your world. Useful for modpacks with tons of random machines.
+A mod for helping you locate tile/block entities in your world. Useful for modpacks with tons of random machines. Colors and helix are configurable in the mod options.
 
 Repo is based on https://github.com/quat1024/modern-forge-1.12-template, vibecoded with v0 and OpenAI o3.
 
-![screenshot](./screenshot.png)
+<!-- ![screenshot](./screenshot.png) -->
+<!-- a table showing screenshot-1.png and screenhot-2.png -->
+
+| Beam                              | GUI                               |
+| --------------------------------- | --------------------------------- |
+| ![screenshot-1](screenshot-1.png) | ![screenshot-2](screenshot-2.png) |
 
 ## Releasing
 
