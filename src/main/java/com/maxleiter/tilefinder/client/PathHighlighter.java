@@ -4,13 +4,6 @@ import com.maxleiter.tilefinder.Config;
 import com.maxleiter.tilefinder.TileFinder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -67,9 +60,6 @@ public class PathHighlighter {
         Vec3 startPos = playerPos.add(lookVec.scale(offsetDistance)).add(rightVec.scale(sideOffset));
 
         Vec3 endPos = Vec3.atCenterOf(targetPos);
-
-        // Debug logging
-        System.out.println("PathHighlighter: Rendering to " + targetPos + ", enableBeam=" + Config.ENABLE_BEAM.get());
 
         // Render the highlight box
         renderHighlightBox(poseStack, bufferSource, cameraPos, targetPos);
@@ -146,17 +136,17 @@ public class PathHighlighter {
 
             // Draw line segments
             if (prevPos1 != null) {
-                // First strand in bright cyan
+                // First strand in bright purple
                 consumer.addVertex(matrix, (float) prevPos1.x, (float) prevPos1.y, (float) prevPos1.z)
-                        .setColor(0, 255, 255, 255);
+                        .setColor(Config.helixColor1Red, Config.helixColor1Green, Config.helixColor1Blue, 255);
                 consumer.addVertex(matrix, (float) pos1.x, (float) pos1.y, (float) pos1.z)
-                        .setColor(0, 255, 255, 255);
+                        .setColor(Config.helixColor1Red, Config.helixColor1Green, Config.helixColor1Blue, 255);
 
-                // Second strand in lighter cyan
+                // Second strand in lighter purple
                 consumer.addVertex(matrix, (float) prevPos2.x, (float) prevPos2.y, (float) prevPos2.z)
-                        .setColor(100, 200, 255, 255);
+                        .setColor(Config.helixColor2Red, Config.helixColor2Green, Config.helixColor2Blue, 255);
                 consumer.addVertex(matrix, (float) pos2.x, (float) pos2.y, (float) pos2.z)
-                        .setColor(100, 200, 255, 255);
+                        .setColor(Config.helixColor2Red, Config.helixColor2Green, Config.helixColor2Blue, 255);
             }
 
             prevPos1 = pos1;

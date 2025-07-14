@@ -142,17 +142,14 @@ public class TileFinderScreen extends Screen {
                 }));
 
         // GitHub link button
-        String linkLabel = "TileFinder ↗";
-        int linkW = font.width(linkLabel) + 8;
-        this.addRenderableWidget(new ChipButton(width - linkW - PAD, btnY, linkW, 14,
-                Component.literal(linkLabel),
-                btn -> {
-                    this.minecraft.setScreen(new ConfirmLinkScreen((result) -> {
-                        if (result) {
-                            net.minecraft.Util.getPlatform().openUri("https://github.com/maxleiter/tilefinder");
-                        }
-                        this.minecraft.setScreen(this);
-                    }, "https://github.com/maxleiter/tilefinder", true));
+        this.addRenderableWidget(new ChipButton(this.width - 70, this.height - 25, 65, 20,
+                Component.literal("GitHub"), button -> {
+                    try {
+                        java.awt.Desktop.getDesktop()
+                                .browse(java.net.URI.create("https://github.com/maxleiter/tilefinder"));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }));
     }
 
