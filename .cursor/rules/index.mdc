@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+
+- EventBusDescriber does not need bus = ..., use: @EventBusSubscriber(modid = TileFinder.MODID, value = Dist.CLIENT)
+- Use context7 to search the "Neo" project (github.com/neoforged/documentation)
+- Do not add fallbacks or simulated behaviors, this can make it difficult for me to debug

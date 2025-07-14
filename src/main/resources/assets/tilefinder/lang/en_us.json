@@ -1,0 +1,16 @@
+{
+  "itemGroup.tilefinder": "Tile Finder",
+  "key.tilefinder.open": "Open Tile Finder",
+  "key.tilefinder.clear": "Clear Highlight",
+  "key.categories.tilefinder": "TileFinder",
+  "screen.tilefinder.title": "Tile Finder",
+  "block.tilefinder.example_block": "Example Block",
+  "item.tilefinder.example_item": "Example Item",
+
+  "tilefinder.configuration.helixRadius": "Helix Radius",
+  "tilefinder.configuration.helixSpeed": "Helix Speed",
+  "tilefinder.configuration.arcScale": "Arc Scale",
+  "tilefinder.configuration.enableBeam": "Enable Beam",
+  "tilefinder.configuration.defaultRadius": "Default Radius",
+  "tilefinder.configuration.favorites": "Favorites"
+}
