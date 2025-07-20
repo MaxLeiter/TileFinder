@@ -19,7 +19,6 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.fml.common.EventBusSubscriber;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -35,7 +34,6 @@ import java.util.function.Consumer;
  * within a radius around the invoking player. Clicking an entry spawns a burst of particles at each
  * matching location so vanilla clients can visually locate them. Shift-click teleports to the nearest.
  */
-@EventBusSubscriber(modid = com.maxleiter.tilefinder.TileFinder.MODID)
 public final class TileFinderServerUI {
     private TileFinderServerUI() {}
 
