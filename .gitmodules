@@ -1,0 +1,3 @@
+[submodule "libs/GooeyLibs"]
+	path = libs/GooeyLibs
+	url = https://github.com/NickImpact/GooeyLibs.git

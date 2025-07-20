@@ -47,5 +47,8 @@
   "tilefinder.configuration.defaultRadius.tooltip": "Default radius for searching tile entities when opening the GUI",
   "tilefinder.configuration.favorites": "Favorites",
   "tilefinder.configuration.favorites.tooltip": "List of favorite tile entity IDs that will be highlighted in the GUI",
-  "item.tilefinder.tilefinder": "TileFinder"
+  "item.tilefinder.tilefinder": "TileFinder",
+  "tilefinder.server.no_results": "No block entities found within %s blocks.",
+  "tilefinder.server.ui_title": "TileFinder (%s)",
+  "tilefinder.server.highlighted": "Highlighted %s blocks"
 }

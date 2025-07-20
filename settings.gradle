@@ -7,3 +7,9 @@ pluginManagement {
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.9.0'
 }
+
+// GooeyLibs is present as a git submodule for reference; we consume prebuilt jars from ./libs.
+// includeBuild("libs/GooeyLibs")
+
+rootProject.name = 'tilefinder'
+
