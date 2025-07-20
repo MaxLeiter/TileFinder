@@ -99,7 +99,7 @@ public final class TileFinderServerUI {
         }
         // fill remainder with glass so layout is stable
         ItemStack filler = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
-        filler.setHoverName(Component.literal(" "));
+        filler.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal(" "));
         for (; slot < rows * 9; slot++) {
             tmpl.set(slot, GooeyButton.of(filler));
         }
@@ -113,11 +113,11 @@ public final class TileFinderServerUI {
     private static GooeyButton buildButton(ServerPlayer player, Block block, List<BlockPos> positions) {
         ItemStack display = new ItemStack(block.asItem());
         int count = positions.size();
-        display.setHoverName(Component.literal(count + "x " + getPrettyName(block)).withStyle(ChatFormatting.AQUA));
+        display.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal(count + "x " + getPrettyName(block)).withStyle(ChatFormatting.AQUA));
 
         Consumer<ButtonAction> click = action -> {
             ServerPlayer sp = (ServerPlayer) action.getPlayer();
-            if (action.getClickType().isShiftClick()) {
+            if (action.getClickType() == ca.landonjw.gooeylibs2.api.button.ButtonClick.SHIFT_LEFT_CLICK || action.getClickType() == ca.landonjw.gooeylibs2.api.button.ButtonClick.SHIFT_RIGHT_CLICK) {
                 teleportToNearest(sp, positions);
             } else {
                 ParticleHighlighter.highlight(sp, positions);
