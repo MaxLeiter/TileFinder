@@ -38,6 +38,7 @@ import java.util.function.Consumer;
 // NBT inspection
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 
 /**
  * Server-side (vanilla friendly) TileFinder UI backed by GooeyLibs.
@@ -235,15 +236,13 @@ public final class TileFinderServerUI {
 
     private static GooeyButton buildHelpButtonTop(ServerPlayer opener, int radius, @Nullable String filter) {
         ItemStack icon = new ItemStack(Items.WRITABLE_BOOK);
-        icon.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                Component.literal("Help")
-                        .withStyle(s -> s.withItalic(false).withColor(ChatFormatting.AQUA))
-                        .append(Component.literal("\nClick block: 3s path")
-                                .withStyle(s -> s.withItalic(false).withColor(ChatFormatting.GRAY)))
-                        .append(Component.literal("\nShift block: keep path (/tilefinder clear)")
-                                .withStyle(s -> s.withItalic(false).withColor(ChatFormatting.YELLOW)))
-                        .append(Component.literal("\nClick multi: open list")
-                                .withStyle(s -> s.withItalic(false).withColor(ChatFormatting.GRAY))));
+        Component nameComp = Component.literal("Help").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.AQUA));
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.literal("Click block: 3s path").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.GRAY)));
+        lore.add(Component.literal("Shift block: keep path (/tilefinder clear)").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.YELLOW)));
+        lore.add(Component.literal("Click multi: open list").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.GRAY)));
+        setNameAndLore(icon, nameComp, lore);
+
         Consumer<ButtonAction> click = action -> {
             ServerPlayer sp = (ServerPlayer) action.getPlayer();
             sp.displayClientMessage(Component.literal("TileFinder Help:"), false);
@@ -263,11 +262,11 @@ public final class TileFinderServerUI {
         int count = positions.size();
         String label = count + "x " + getPrettyName(block);
         if (count > 1) label += " (click)";
-        display.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                Component.literal(label)
-                        .withStyle(s -> s.withItalic(false).withColor(ChatFormatting.AQUA))
-                        .append(statusForComponent(player, positions.isEmpty()?player.blockPosition():positions.get(0)))
-        );
+        Component nameComp = Component.literal(label).withStyle(s -> s.withItalic(false).withColor(ChatFormatting.AQUA));
+        List<Component> lore = new ArrayList<>();
+        Component status = statusForComponent(player, positions.isEmpty()?player.blockPosition():positions.get(0));
+        if (!status.getString().isEmpty()) lore.add(status);
+        setNameAndLore(display, nameComp, lore);
 
         Consumer<ButtonAction> click = action -> {
             ServerPlayer sp = (ServerPlayer) action.getPlayer();
@@ -350,13 +349,13 @@ public final class TileFinderServerUI {
 
     private static GooeyButton buildHelpButtonNested(ServerPlayer opener, Block block, int radius, @Nullable String filter) {
         ItemStack icon = new ItemStack(Items.WRITABLE_BOOK);
-        icon.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                Component.literal("Help")
-                        .withStyle(s -> s.withItalic(false).withColor(ChatFormatting.AQUA))
-                        .append(Component.literal("\nClick coord: 3s path")
-                                .withStyle(s -> s.withItalic(false).withColor(ChatFormatting.GRAY)))
-                        .append(Component.literal("\nShift coord: keep path (/tilefinder clear)")
-                                .withStyle(s -> s.withItalic(false).withColor(ChatFormatting.YELLOW))) );
+        Component nameComp = Component.literal("Help").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.AQUA));
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.literal("Click coord: 3s path").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.GRAY)));
+        lore.add(Component.literal("Shift coord: keep path (/tilefinder clear)").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.YELLOW)));
+        lore.add(Component.literal("Back arrow to return").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.GRAY)));
+        setNameAndLore(icon, nameComp, lore);
+
         Consumer<ButtonAction> click = action -> {
             ServerPlayer sp = (ServerPlayer) action.getPlayer();
             sp.displayClientMessage(Component.literal("TileFinder Help:"), false);
@@ -369,14 +368,17 @@ public final class TileFinderServerUI {
 
     private static GooeyButton buildBackButton(ServerPlayer opener, int radius, @Nullable String filter) {
         ItemStack icon = new ItemStack(Items.BOOK);
-        icon.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, Component.literal("Back").withStyle(ChatFormatting.YELLOW));
+        Component nameComp = Component.literal("Back").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.YELLOW));
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.literal("Back to block list").withStyle(s -> s.withItalic(false).withColor(ChatFormatting.GRAY)));
+        setNameAndLore(icon, nameComp, lore);
         return GooeyButton.builder().display(icon).onClick(action -> open(opener, radius, filter)).build();
     }
 
     private static Component statusForComponent(ServerPlayer player, BlockPos pos) {
         String summary = statusSummary(player, pos);
         if (summary.isEmpty()) return Component.empty();
-        return Component.literal("\n" + summary).withStyle(s -> s.withItalic(false).withColor(ChatFormatting.DARK_GRAY));
+        return Component.literal(summary).withStyle(s -> s.withItalic(false).withColor(ChatFormatting.DARK_GRAY));
     }
 
     private static String statusSummary(ServerPlayer player, BlockPos pos) {
@@ -419,10 +421,11 @@ public final class TileFinderServerUI {
         ItemStack icon = new ItemStack(block.asItem());
         double dist = Math.sqrt(pos.distSqr(opener.blockPosition()));
         String label = String.format(Locale.ROOT, "%s @ %d %d %d (%.0fm)", getPrettyName(block), pos.getX(), pos.getY(), pos.getZ(), dist);
-        icon.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                Component.literal(label).withStyle(s -> s.withItalic(false).withColor(ChatFormatting.GOLD))
-                        .append(statusForComponent(opener, pos))
-        );
+        Component nameComp = Component.literal(label).withStyle(s -> s.withItalic(false).withColor(ChatFormatting.GOLD));
+        List<Component> lore = new ArrayList<>();
+        Component status = statusForComponent(opener, pos);
+        if (!status.getString().isEmpty()) lore.add(status);
+        setNameAndLore(icon, nameComp, lore);
 
         Consumer<ButtonAction> click = action -> {
             ServerPlayer sp = (ServerPlayer) action.getPlayer();
@@ -449,6 +452,13 @@ public final class TileFinderServerUI {
 
     private static String getPrettyName(Block block) {
         return block.getName().getString();
+    }
+
+    private static void setNameAndLore(ItemStack stack, Component name, List<Component> lore) {
+        stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, name);
+        if (!lore.isEmpty()) {
+            stack.set(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(lore));
+        }
     }
 
     // (legacy) ParticleHighlighter removed - using ServerPathHighlighter now
