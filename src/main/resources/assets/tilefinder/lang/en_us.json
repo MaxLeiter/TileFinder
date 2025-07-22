@@ -50,5 +50,9 @@
   "item.tilefinder.tilefinder": "TileFinder",
   "tilefinder.server.no_results": "No block entities found within %s blocks.",
   "tilefinder.server.ui_title": "TileFinder (%s)",
-  "tilefinder.server.highlighted": "Highlighted %s blocks"
+  "tilefinder.server.highlighted": "Highlighted %s blocks",
+  "tilefinder.server.teleport_denied": "You must be OP to teleport.",
+  "tilefinder.server.filter.current": "Filter: %s",
+  "tilefinder.server.filter.clear": "Clear Filter",
+  "tilefinder.server.ui_title_paged": "TileFinder (%s) {current}/{total}"
 }

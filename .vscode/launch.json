@@ -6,10 +6,10 @@
       "request": "launch",
       "name": "Client",
       "presentation": {
-        "group": "Mod Development - tilefinder-template-1.21.1",
+        "group": "Mod Development - tilefinder",
         "order": 0
       },
-      "projectName": "tilefinder-template-1.21.1",
+      "projectName": "tilefinder",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
         "@/Users/maxleiter/Documents/tilefinder-template-1.21.1/build/moddev/clientRunProgramArgs.txt"
@@ -28,10 +28,10 @@
       "request": "launch",
       "name": "Data",
       "presentation": {
-        "group": "Mod Development - tilefinder-template-1.21.1",
+        "group": "Mod Development - tilefinder",
         "order": 1
       },
-      "projectName": "tilefinder-template-1.21.1",
+      "projectName": "tilefinder",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
         "@/Users/maxleiter/Documents/tilefinder-template-1.21.1/build/moddev/dataRunProgramArgs.txt"
@@ -50,10 +50,10 @@
       "request": "launch",
       "name": "GameTestServer",
       "presentation": {
-        "group": "Mod Development - tilefinder-template-1.21.1",
+        "group": "Mod Development - tilefinder",
         "order": 2
       },
-      "projectName": "tilefinder-template-1.21.1",
+      "projectName": "tilefinder",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
         "@/Users/maxleiter/Documents/tilefinder-template-1.21.1/build/moddev/gameTestServerRunProgramArgs.txt"
@@ -72,10 +72,10 @@
       "request": "launch",
       "name": "Server",
       "presentation": {
-        "group": "Mod Development - tilefinder-template-1.21.1",
+        "group": "Mod Development - tilefinder",
         "order": 3
       },
-      "projectName": "tilefinder-template-1.21.1",
+      "projectName": "tilefinder",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
         "@/Users/maxleiter/Documents/tilefinder-template-1.21.1/build/moddev/serverRunProgramArgs.txt"
