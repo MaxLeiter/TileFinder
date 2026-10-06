@@ -5,6 +5,10 @@
 Find the block entities around you: chests, furnaces, machines, tanks, cables, everything a modpack base hides
 behind walls. Press `\`, search, click, and follow the beam.
 
+| Finder | Tracking, through a wall |
+|---|---|
+| ![The finder](docs/finder-list.png) | ![Tracking](docs/beam-through-wall.png) |
+
 | Minecraft | NeoForge | Fabric |
 |---|---|---|
 | 26.3 | 26.3.0.26-beta+ | Loader 0.19.5+, Fabric API |
@@ -38,13 +42,12 @@ branch, and the NeoForge-only 1.21.1 version (0.4) on `1.21.1/neoforge`.
 
 ### What counts as one thing
 
-- A double chest is one chest, a two-tall block is one block, and on 1.21.1 a bed is one bed (beds have no block
-  entity from 26.1 on, so they aren't listed there).
+- A double chest is one chest, and a two-tall block is one block.
 - Touching blocks of the same kind are merged into one place: a run of cable or pipe is one network, a wall of
   barrels is one storage wall. Expand it to see every block. You can turn this off.
 - Wall signs, wall heads and wall banners are listed with their items, so all oak signs are one group.
-- Moving pistons are never listed. Signs, hanging signs, banners, heads, beds (1.21.1), decorated pots, bells and
-  copper golem statues are decoration: hidden from "All" unless you ask for them, always under "Decor".
+- Moving pistons are never listed. Signs, hanging signs, banners, heads, decorated pots, bells and copper golem
+  statues are decoration: hidden from "All" unless you ask for them, always under "Decor".
 - Packs and servers can extend both lists with the block entity type tags `tilefinder:hidden` and
   `tilefinder:decorative` (`data/<namespace>/tags/block_entity_type/…`); players can add type ids in the settings.
 
