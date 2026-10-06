@@ -3,13 +3,17 @@ package com.maxleiter.tilefinder.neoforge;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
+import com.maxleiter.tilefinder.Mc;
+import com.maxleiter.tilefinder.TileFinder;
 import com.maxleiter.tilefinder.platform.Platform;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLPaths;
@@ -17,6 +21,8 @@ import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 
 public final class NeoForgePlatform implements Platform {
+    private static final Set<BlockEntityType<?>> FAILED = ConcurrentHashMap.newKeySet();
+
     //? if >=26 {
     private static final BlockCapability<?, Direction> ITEMS = Capabilities.Item.BLOCK;
     private static final BlockCapability<?, Direction> FLUIDS = Capabilities.Fluid.BLOCK;
@@ -51,11 +57,22 @@ public final class NeoForgePlatform implements Platform {
         return holds;
     }
 
-    /** Machines often expose a handler on some sides only, so a null (unsided) answer still tries each side. */
+    /**
+     * Machines often expose a handler on some sides only, so a null (unsided) answer still tries each side. The
+     * providers are other mods' code, often written for the server only; one that throws on the client counts as not
+     * exposing the capability, and is logged once per block entity type.
+     */
     private static boolean has(Level level, BlockPos pos, BlockState state, BlockEntity blockEntity, BlockCapability<?, Direction> capability) {
-        if (level.getCapability(capability, pos, state, blockEntity, null) != null) return true;
-        for (Direction side : Direction.values()) {
-            if (level.getCapability(capability, pos, state, blockEntity, side) != null) return true;
+        try {
+            if (level.getCapability(capability, pos, state, blockEntity, null) != null) return true;
+            for (Direction side : Direction.values()) {
+                if (level.getCapability(capability, pos, state, blockEntity, side) != null) return true;
+            }
+        } catch (RuntimeException e) {
+            if (FAILED.add(blockEntity.getType())) {
+                TileFinder.LOG.warn("{} capability provider for {} threw; listing it without that capability",
+                        capability.name(), Mc.typeId(blockEntity.getType()), e);
+            }
         }
         return false;
     }

@@ -30,6 +30,7 @@ public final class Mc {
     }
 
     /** What pick-block gives for this block: the item a wall sign or a wall head comes from, without its data. */
+    @SuppressWarnings("deprecation") // 1.21.1's Block#getCloneItemStack; NeoForge's replacement needs a Player
     public static ItemStack pickStack(Level level, BlockPos pos, BlockState state) {
         //? if >=26 {
         return state.getCloneItemStack(level, pos, false);
