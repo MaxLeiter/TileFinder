@@ -110,7 +110,7 @@ tasks.withType(PublishModTask).configureEach { task ->
         def lines = ["${task.path}:",
                      "  project ${platform.projectId.get()}, ${platform.type.get().toString().toLowerCase()}",
                      "  loaders ${platform.modLoaders.get()}, Minecraft ${platform.minecraftVersions.get()}"]
-        lines << "  dependencies ${platform.dependencies.get().collect { "${it.type.get().toString().toLowerCase()} ${it.slug.get()}" }}"
+        lines << "  dependencies ${platform.dependencies.get().collect { "${it.type.get().toString().toLowerCase()} ${it.slug.orNull ?: it.id.orNull}" }}"
         lines.join('\n')
     }
     doFirst { logger.lifecycle(summary.get()) }
