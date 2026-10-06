@@ -59,3 +59,5 @@ rei_version_range = "[16,)"
 architectury_version = "13.0.11"
 cloth_config_version = "15.0.130"
 modmenu_version = "11.0.5"
+# EMI has no 26.x builds: https://maven.terraformersmc.com/releases/dev/emi/
+emi_version = "1.1.24+1.21.1"

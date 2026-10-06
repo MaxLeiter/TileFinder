@@ -213,6 +213,34 @@ function pickFirst() {
   if (list.length > 0) track(list[0], list[0].spotsShown[0]);
 }
 
+// The icon under the pointer goes to Java, so a recipe viewer's own keys (R, U) work on it. Moving across a list
+// changes it every few frames: only the latest value is sent, at most every 50 ms. While the search box has focus
+// nothing is reported, or typing an "r" over an icon would open the viewer.
+let hoverRaw = null;
+let hoverSent = null;
+let hoverTimer = 0;
+
+function hoverIcon(g, event) {
+  hoverRaw = null;
+  if (g && event) {
+    const r = event.currentTarget.getBoundingClientRect();
+    hoverRaw = { group: g.key, x: r.x, y: r.y, w: r.width, h: r.height };
+  }
+  syncHover();
+}
+
+function syncHover() {
+  if (hoverTimer) return;
+  hoverTimer = setTimeout(() => {
+    hoverTimer = 0;
+    const typing = document.activeElement && document.activeElement.id === 'search';
+    const now = JSON.stringify(typing ? null : hoverRaw);
+    if (now === hoverSent) return;
+    hoverSent = now;
+    vellum.send('hover', typing ? null : hoverRaw);
+  }, 50);
+}
+
 function sendRadius() {
   vellum.send('radius', state.radius);
 }

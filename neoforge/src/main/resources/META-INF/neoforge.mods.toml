@@ -51,3 +51,11 @@ type = "optional"
 versionRange = "${rei_version_range}"
 ordering = "NONE"
 side = "CLIENT"
+
+# 1.21.1 only: EMI has no builds for 26.x.
+[[dependencies.${mod_id}]]
+modId = "emi"
+type = "optional"
+versionRange = "[1.1,)"
+ordering = "NONE"
+side = "CLIENT"
