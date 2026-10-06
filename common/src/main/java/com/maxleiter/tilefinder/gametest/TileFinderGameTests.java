@@ -48,7 +48,10 @@ public final class TileFinderGameTests {
 
     private static List<Finder.Group> scan(GameTestHelper h, boolean merge) {
         BlockPos center = h.absolutePos(new BlockPos(4, 1, 4));
-        return Finder.find(h.getLevel(), center, new Finder.Options(RADIUS, merge, Kinds.defaults()));
+        // 1.21.1 puts the test's structure block and start command block in the arena; they aren't part of the scene.
+        return Finder.find(h.getLevel(), center, new Finder.Options(RADIUS, merge, Kinds.defaults())).stream()
+                .filter(group -> !group.key().equals("minecraft:structure_block") && !group.key().equals("minecraft:command_block"))
+                .toList();
     }
 
     /** A double chest as {@link BlockPos} {@code left} (its left half, facing north) and the half east of it. */

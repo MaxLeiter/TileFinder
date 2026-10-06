@@ -30,6 +30,7 @@ public final class TileFinderClient {
             Tracker.clear();
         }
         Tracker.tick(mc);
+        DevAutopilot.tick(mc);
     }
 
     /**
