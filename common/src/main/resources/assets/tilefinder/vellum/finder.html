@@ -24,7 +24,7 @@
         <label class="search">
           <sprite src="minecraft:icon/search"></sprite>
           <input id="search" type="search" v-model="ui.query" :placeholder="vellum.t('tilefinder.gui.search')"
-                 aria-label="Search" @keydown.enter="pickFirst()">
+                 aria-label="Search" @keydown.enter="pickFirst()" @focus="syncHover()" @blur="syncHover()">
           <button class="x" v-show="ui.query" @click="ui.query = ''" :title="vellum.t('tilefinder.gui.clear_search')">×</button>
         </label>
         <div class="radius" :title="vellum.t('tilefinder.gui.radius_tip')">
@@ -60,7 +60,8 @@
         <div class="group" v-for="g in shown()" :key="g.key" :class="{ open: isOpen(g) }">
           <div class="g-head" @click="toggle(g)" :title="g.block">
             <span class="chev">{{ isOpen(g) ? '▾' : '▸' }}</span>
-            <item v-if="g.item" :id="g.item" tooltip :title="tooltip(g)"></item>
+            <item v-if="g.item" :id="g.item" tooltip :title="tooltip(g)"
+                  @mouseenter="hoverIcon(g, $event)" @mouseleave="hoverIcon(null)"></item>
             <span v-else class="noicon">?</span>
             <span class="g-name">{{ g.name }}</span>
             <span class="holds">

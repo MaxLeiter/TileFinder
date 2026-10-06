@@ -18,6 +18,8 @@ dependencies {
     compileOnly("me.shedaniel:RoughlyEnoughItems-api-neoforge:${rei_version}") { transitive = false }
     compileOnly("dev.architectury:architectury-neoforge:${architectury_version}") { transitive = false }
     compileOnly("me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}") { transitive = false }
+    // EMI has no 26.x builds; its plugin is in common/versions/1.21.1.
+    if (stonecutter.current.parsed < '26') compileOnly("dev.emi:emi-xplat-mojmap:${emi_version}:api") { transitive = false }
 }
 
 configurations {

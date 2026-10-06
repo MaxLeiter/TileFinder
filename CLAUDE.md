@@ -22,7 +22,7 @@ player to one with a box and a beam. NeoForge + Fabric, Minecraft 26.3 / 26.2 / 
 - `./gradlew build` builds every version and loader. One target: `./gradlew :fabric:26.2:build`.
   Loom resolves mods while configuring, so a missing Vellum fails configuration of every project; add
   `--configure-on-demand` to only configure what you run.
-- Run: `./gradlew :neoforge:26.3:runClient` (`-Prei` for REI instead of JEI, `-PnoViewers` for neither).
+- Run: `./gradlew :neoforge:26.3:runClient` (`-Prei` for REI instead of JEI, `-Pemi` for EMI on 1.21.1, `-PnoViewers` for neither).
 - Jars: `<loader>/versions/<mc>/build/libs/tilefinder-<loader>-<mc>-<version>.jar`.
 
 ## Conventions
