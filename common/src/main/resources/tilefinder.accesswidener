@@ -1,0 +1,3 @@
+accessWidener v2 official
+# The slot under the pointer in an inventory, for "find this item's block".
+accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen hoveredSlot Lnet/minecraft/world/inventory/Slot;

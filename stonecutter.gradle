@@ -1,0 +1,31 @@
+// The Stonecutter controller (the root project's build script). `stonecutter.active` is the version the sources on
+// disk are written for; switch it with the "Set active project to ..." tasks, and set it back to the vcs version
+// (26.3) before committing.
+plugins {
+    id 'dev.kikugie.stonecutter'
+    // Loom for unobfuscated versions (26.x), and the remapping Loom for obfuscated ones (1.21.1).
+    id 'net.fabricmc.fabric-loom' version '1.18.2' apply false
+    id 'net.fabricmc.fabric-loom-remap' version '1.18.2' apply false
+    id 'net.neoforged.moddev' version '2.0.147' apply false
+}
+
+stonecutter.active '26.3'
+
+stonecutter.parameters { sc ->
+    // The version's settings from stonecutter.properties.toml become project properties.
+    sc.properties.tags(sc.current.version)
+
+    // Renames between versions, applied to the whole source text so shared code needs no version comments for them.
+    // Each goes one way for 26.x and the other way for older versions.
+    boolean modern = sc.current.parsed >= '26'
+    sc.replacements.regex(modern) { spec ->
+        spec.replace('\\bResourceLocation\\b', 'Identifier', '\\bIdentifier\\b', 'ResourceLocation')
+    }
+    sc.replacements.regex(modern) { spec ->
+        spec.replace('\\bGuiGraphics\\b', 'GuiGraphicsExtractor', '\\bGuiGraphicsExtractor\\b', 'GuiGraphics')
+    }
+    // Fabric's access widener names Mojang's names "official" on 26.x, "named" before.
+    sc.replacements.string(modern) { spec ->
+        spec.replace('accessWidener v2 named', 'accessWidener v2 official')
+    }
+}

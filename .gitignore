@@ -1,17 +1,10 @@
-# eclipse
-bin
-*.launch
-.settings
-.metadata
-.classpath
-.project
-
 # idea
 out
 *.ipr
 *.iws
 *.iml
-.idea
+.idea/*
+!.idea/scopes
 
 # gradle
 build
@@ -21,9 +14,8 @@ build
 eclipse
 run
 runs
-run-data
+*.hprof
+.DS_Store
 
-repo
-.aider*
-
-old/
+# agent scratch
+.claude/

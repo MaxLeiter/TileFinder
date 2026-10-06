@@ -1,0 +1,129 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+// Applied to the Stonecutter version subprojects (:common:26.3, :neoforge:1.21.1...): the parent project is the
+// loader (or common), and the project's own name is the Minecraft version.
+def platform = project.parent.name
+def mavenGroup = project.group.toString()
+// Every version subproject of every branch is named after its Minecraft version, and Gradle takes projects with the
+// same group, name and version for the same module, so each branch gets a group of its own. Publications keep
+// mavenGroup.
+group = "${mavenGroup}.${platform}"
+
+base {
+    archivesName = "${mod_id}-${platform}-${minecraft_version}"
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(java_version as int)
+    withSourcesJar()
+}
+
+repositories {
+    // Vellum isn't on a public maven: publish it locally from a Vellum checkout (CI does this from its tag).
+    exclusiveContent {
+        forRepository { mavenLocal() }
+        filter { includeGroup('dev.vellum') }
+    }
+    exclusiveContent {
+        forRepository { maven { name = 'BlameJared'; url = uri('https://maven.blamejared.com') } }
+        filter {
+            includeGroup('mezz.jei')
+            includeGroup('net.mezzdev.config')
+        }
+    }
+    exclusiveContent {
+        forRepository { maven { name = 'Shedaniel'; url = uri('https://maven.shedaniel.me') } }
+        filter {
+            includeGroupAndSubgroups('me.shedaniel')
+            includeGroup('dev.architectury')
+        }
+    }
+}
+
+tasks.withType(Jar).configureEach {
+    from(rootProject.file('LICENSE')) {
+        rename { "${it}_${mod_name}" }
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+                'Specification-Title'   : mod_name,
+                'Specification-Vendor'  : mod_author,
+                'Specification-Version' : project.jar.archiveVersion,
+                'Implementation-Title'  : platform,
+                'Implementation-Version': project.jar.archiveVersion,
+                'Implementation-Vendor' : mod_author,
+                'Built-On-Minecraft'    : minecraft_version
+        ])
+    }
+}
+
+processResources {
+    var expandProps = [
+            'version'                      : version,
+            'group'                        : mavenGroup,
+            'minecraft_version'            : minecraft_version,
+            'minecraft_version_range'      : minecraft_version_range,
+            'fabric_minecraft_version'     : fabric_minecraft_version,
+            'fabric_version'               : fabric_version,
+            'fabric_loader_version'        : fabric_loader_version,
+            'mod_name'                     : mod_name,
+            'mod_author'                   : mod_author,
+            'mod_id'                       : mod_id,
+            'license'                      : license,
+            'description'                  : project.description,
+            'homepage'                     : homepage,
+            'issues'                       : issues,
+            'neoforge_version'             : neoforge_version,
+            'neoforge_loader_version_range': neoforge_loader_version_range,
+            'credits'                      : credits,
+            'java_version'                 : java_version,
+            'vellum_version'               : vellum_version,
+            'jei_version_range'            : jei_version_range,
+            'rei_version_range'            : rei_version_range
+    ]
+
+    var jsonExpandProps = expandProps.collectEntries {
+        key, value -> [(key): value instanceof String ? value.replace('\n', '\\\\n') : value]
+    }
+
+    filesMatching(['META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) {
+        expand expandProps
+    }
+
+    filesMatching(['pack.mcmeta', 'fabric.mod.json', '*.mixins.json']) {
+        expand jsonExpandProps
+    }
+
+    inputs.properties(expandProps)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs.addAll(['-Xlint:deprecation', '-Xlint:unchecked'])
+}
+
+dependencies {
+    // 26.x ships JSpecify with Minecraft; older versions don't.
+    if (stonecutter.current.parsed < '26') compileOnly('org.jspecify:jspecify:1.0.0')
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            groupId = mavenGroup
+            artifactId base.archivesName.get()
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url System.getenv('local_maven_url')
+        }
+    }
+}

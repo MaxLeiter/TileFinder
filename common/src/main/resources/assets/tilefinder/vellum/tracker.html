@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+  <title>TileFinder tracker</title>
+  <style>
+    /* The HUD line while tracking: what, how far, which way. Top centre, under the boss bars' usual place. */
+    body { height: 100vh; display: flex; justify-content: center; align-items: flex-start; pointer-events: none; }
+    .tracker {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 22px;
+      padding: 2px 6px 2px 3px;
+      background: rgba(12, 14, 20, 0.6);
+      border: 1px solid rgba(64, 224, 255, 0.35);
+      border-radius: 9px;
+      color: #e8e8ec;
+      text-shadow: minecraft;
+      animation: in 200ms ease-out both;
+    }
+    @keyframes in { from { opacity: 0; transform: translateY(-4px); } }
+    .arrow { width: 9px; text-align: center; color: #40e0ff; }
+    .distance { color: #40e0ff; }
+    .dy { color: #8a8f9c; }
+    .left { color: #8a8f9c; }
+    [v-cloak] { display: none; }
+  </style>
+</head>
+<body>
+  <div class="tracker" v-if="tracker" v-cloak aria-live="polite">
+    <item v-if="tracker.item" :id="tracker.item"></item>
+    <span>{{ tracker.label }}</span>
+    <span class="arrow">{{ tracker.arrow }}</span>
+    <span class="distance">{{ tracker.distance }}m</span>
+    <span class="dy" v-if="tracker.dy >= 2">▲{{ tracker.dy }}</span>
+    <span class="dy" v-if="tracker.dy <= -2">▼{{ -tracker.dy }}</span>
+    <span class="left" v-if="tracker.total > 1">{{ vellum.t('tilefinder.hud.left', tracker.left, tracker.total) }}</span>
+  </div>
+</body>
+</html>

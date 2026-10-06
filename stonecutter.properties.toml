@@ -1,0 +1,61 @@
+# Per-version build settings, read by Stonecutter into each version's subprojects as project properties.
+# Everything shared by all versions is in gradle.properties.
+
+["26.3"]
+minecraft_version = "26.3"
+minecraft_version_range = "[26.3, 26.4)"
+fabric_minecraft_version = "~26.3"
+java_version = "25"
+neo_form_version = "26.3-1"
+# Fabric, see https://fabricmc.net/develop/
+fabric_version = "0.161.0+26.3"
+fabric_loader_version = "0.19.5"
+# NeoForge, see https://projects.neoforged.net/neoforged/neoforge
+neoforge_version = "26.3.0.26-beta"
+neoforge_loader_version_range = "[4,)"
+# Recipe viewers (compile-only, plus a dev runtime): https://maven.blamejared.com/mezz/jei/, https://maven.shedaniel.me
+jei_version = "31.9.0.58"
+jei_version_range = "[31,)"
+rei_version = "26.3.823"
+rei_version_range = "[26.3,)"
+architectury_version = "22.0.4"
+cloth_config_version = "26.3.159"
+# Mod Menu (Fabric config screen entry): https://maven.terraformersmc.com/releases/com/terraformersmc/modmenu/
+modmenu_version = "21.0.0"
+
+["26.2"]
+minecraft_version = "26.2"
+minecraft_version_range = "[26.2, 26.3)"
+fabric_minecraft_version = "~26.2"
+java_version = "25"
+neo_form_version = "26.2-2"
+fabric_version = "0.161.0+26.2"
+fabric_loader_version = "0.19.5"
+neoforge_version = "26.2.0.88"
+neoforge_loader_version_range = "[4,)"
+jei_version = "30.39.0.233"
+jei_version_range = "[30,)"
+rei_version = "26.2.821"
+rei_version_range = "[26.2,)"
+architectury_version = "21.1.11"
+cloth_config_version = "26.2.155"
+modmenu_version = "20.0.3"
+
+["1.21.1"]
+minecraft_version = "1.21.1"
+minecraft_version_range = "[1.21.1, 1.21.2)"
+fabric_minecraft_version = ">=1.21.1 <1.21.2"
+java_version = "21"
+neo_form_version = "1.21.1-20240808.144430"
+# 1.21.1 is obfuscated: Fabric builds with the remapping Loom and Mojang's mappings.
+fabric_version = "0.116.17+1.21.1"
+fabric_loader_version = "0.19.5"
+neoforge_version = "21.1.255"
+neoforge_loader_version_range = "[4,)"
+jei_version = "19.57.0.451"
+jei_version_range = "[19,)"
+rei_version = "16.0.799"
+rei_version_range = "[16,)"
+architectury_version = "13.0.11"
+cloth_config_version = "15.0.130"
+modmenu_version = "11.0.5"

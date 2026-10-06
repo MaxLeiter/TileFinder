@@ -1,0 +1,68 @@
+plugins {
+    id 'multiloader-common'
+    id 'net.neoforged.moddev'
+}
+
+neoForge {
+    neoFormVersion = neo_form_version
+    // The access transformer, with its Stonecutter comments resolved for this version.
+    accessTransformers.from(stonecutter.process(parent.file('src/main/resources/META-INF/accesstransformer.cfg'),
+            'build/stonecutter-processed/accesstransformer.cfg'))
+}
+
+dependencies {
+    compileOnly("dev.vellum:vellum-common-${minecraft_version}:${vellum_version}")
+    // Recipe viewer APIs. Only the compat classes touch them, and only once the viewer itself loads those classes.
+    compileOnly("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
+    // REI's -neoforge artifacts are Mojang-named on every version; the plain 1.21.1 ones are intermediary-named.
+    compileOnly("me.shedaniel:RoughlyEnoughItems-api-neoforge:${rei_version}") { transitive = false }
+    compileOnly("dev.architectury:architectury-neoforge:${architectury_version}") { transitive = false }
+    compileOnly("me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}") { transitive = false }
+}
+
+configurations {
+    commonJava {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+    commonResources {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+}
+
+// The loaders compile common's sources and copy its resources themselves. Stonecutter sets the source directories:
+// the shared src/ for the active version, a generated copy for the others, and versions/<version>/src for files of one
+// version only.
+artifacts {
+    sourceSets.main.java.srcDirs.each { dir ->
+        commonJava(dir) { builtBy(sourceSets.main.java.sourceDirectories) }
+    }
+    sourceSets.main.resources.srcDirs.each { dir ->
+        commonResources(dir) { builtBy(sourceSets.main.resources.sourceDirectories) }
+    }
+}
+
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements'].each { variant ->
+    configurations.named(variant) {
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant ->
+        configurations.named(variant) {
+            attributes {
+                attribute(loaderAttribute, 'common')
+            }
+        }
+    }
+}
+
+if (!stonecutter.current.isActive) {
+    tasks.named('createMinecraftArtifacts') {
+        dependsOn(tasks.named('stonecutterGenerate'))
+    }
+}

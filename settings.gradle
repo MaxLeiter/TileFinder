@@ -1,15 +1,52 @@
 pluginManagement {
     repositories {
         gradlePluginPortal()
+        mavenCentral()
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = 'Fabric'
+                    url = uri('https://maven.fabricmc.net')
+                }
+            }
+            filter {
+                includeGroupAndSubgroups('net.fabricmc')
+            }
+        }
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = 'KikuGie'
+                    url = uri('https://maven.kikugie.dev/releases')
+                }
+            }
+            filter {
+                includeGroupAndSubgroups('dev.kikugie')
+            }
+        }
     }
 }
 
 plugins {
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.9.0'
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+    // https://maven.kikugie.dev/#/releases/dev/kikugie/stonecutter
+    id 'dev.kikugie.stonecutter' version '0.9.8'
 }
 
-// GooeyLibs is present as a git submodule for reference; we consume prebuilt jars from ./libs.
-// includeBuild("libs/GooeyLibs")
-
 rootProject.name = 'tilefinder'
+includeBuild('build-logic')
 
+// common, neoforge and fabric build once per Minecraft version from one source tree: the subprojects are
+// :common:26.3, :neoforge:26.2, :fabric:1.21.1 and so on, in <branch>/versions/<version>/. Per-version settings are in
+// stonecutter.properties.toml. The sources are written for vcsVersion, with Stonecutter comments for the others.
+def minecraftVersions = ['26.3', '26.2', '1.21.1']
+stonecutter {
+    create(rootProject) {
+        vcsVersion = '26.3'
+        for (String name in ['common', 'neoforge', 'fabric']) {
+            branch(name) {
+                for (String v in minecraftVersions) version(v)
+            }
+        }
+    }
+}

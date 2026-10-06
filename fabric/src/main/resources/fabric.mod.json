@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${description}",
+  "authors": ["${mod_author}"],
+  "contact": {
+    "homepage": "${homepage}",
+    "sources": "${homepage}",
+    "issues": "${issues}"
+  },
+  "license": "${license}",
+  "icon": "assets/tilefinder/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.maxleiter.tilefinder.fabric.TileFinderFabric"],
+    "client": ["com.maxleiter.tilefinder.fabric.client.TileFinderFabricClient"],
+    "modmenu": ["com.maxleiter.tilefinder.fabric.client.TileFinderModMenu"],
+    "jei_mod_plugin": ["com.maxleiter.tilefinder.compat.jei.TileFinderJeiPlugin"],
+    "rei_client": ["com.maxleiter.tilefinder.compat.rei.TileFinderReiPlugin"]
+  },
+  "accessWidener": "${mod_id}.accesswidener",
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "fabric-api": "*",
+    "vellum": ">=${vellum_version}",
+    "minecraft": "${fabric_minecraft_version}",
+    "java": ">=${java_version}"
+  },
+  "suggests": {
+    "jei": "*",
+    "roughlyenoughitems": "*",
+    "modmenu": "*"
+  }
+}

@@ -1,0 +1,202 @@
+<!doctype html>
+<html class="mc-dim">
+<head>
+  <title>TileFinder</title>
+  <link rel="stylesheet" href="finder.css">
+</head>
+<body>
+  <main class="panel" v-cloak data-vellum-bounds>
+    <header>
+      <img class="logo" src="tilefinder:icon.png" alt="">
+      <nav class="tabs" role="tablist">
+        <button :class="{ on: ui.tab === 'list' }" role="tab" :aria-selected="ui.tab === 'list'" :disabled="!tf.inWorld"
+                @click="ui.tab = 'list'">{{ vellum.t('tilefinder.gui.list') }}</button>
+        <button :class="{ on: ui.tab === 'settings' }" role="tab" :aria-selected="ui.tab === 'settings'"
+                @click="openSettings()">{{ vellum.t('tilefinder.gui.settings') }}</button>
+      </nav>
+      <span class="spacer"></span>
+      <span class="summary" v-show="ui.tab === 'list'" role="status">{{ summary() }}</span>
+    </header>
+
+    <!-- ===================== List ===================== -->
+    <section class="list-tab" v-show="ui.tab === 'list'">
+      <div class="toolbar">
+        <label class="search">
+          <sprite src="minecraft:icon/search"></sprite>
+          <input id="search" type="search" v-model="ui.query" :placeholder="vellum.t('tilefinder.gui.search')"
+                 aria-label="Search" @keydown.enter="pickFirst()">
+          <button class="x" v-show="ui.query" @click="ui.query = ''" :title="vellum.t('tilefinder.gui.clear_search')">×</button>
+        </label>
+        <div class="radius" :title="vellum.t('tilefinder.gui.radius_tip')">
+          <span class="dim">{{ vellum.t('tilefinder.gui.radius') }}</span>
+          <input type="range" min="8" :max="tf.maxRadius" step="8" v-model.number="ui.radius"
+                 @change="sendRadius()" aria-label="Radius">
+          <span class="num">{{ ui.radius }}</span>
+        </div>
+        <button class="icon-btn" @click="vellum.send('rescan', true)" :title="vellum.t('tilefinder.gui.rescan')">⟳</button>
+      </div>
+
+      <div class="chips" role="radiogroup">
+        <button v-for="c in chips()" :key="c.id" class="chip" :class="{ on: ui.chip === c.id }"
+                role="radio" :aria-checked="ui.chip === c.id" @click="ui.chip = c.id">
+          {{ c.label }} <span class="count">{{ c.count }}</span>
+        </button>
+        <span class="spacer"></span>
+        <select v-model="ui.sort" aria-label="Sort" :title="vellum.t('tilefinder.gui.sort')">
+          <option value="near">{{ vellum.t('tilefinder.gui.sort.near') }}</option>
+          <option value="name">{{ vellum.t('tilefinder.gui.sort.name') }}</option>
+          <option value="mod">{{ vellum.t('tilefinder.gui.sort.mod') }}</option>
+          <option value="count">{{ vellum.t('tilefinder.gui.sort.count') }}</option>
+        </select>
+      </div>
+
+      <div class="results" id="results">
+        <div class="empty" v-if="shown().length === 0">
+          <item id="minecraft:spyglass"></item>
+          <div>{{ emptyText() }}</div>
+          <button v-if="ui.radius < tf.maxRadius" @click="widen()">{{ vellum.t('tilefinder.gui.widen') }}</button>
+        </div>
+
+        <div class="group" v-for="g in shown()" :key="g.key" :class="{ open: isOpen(g) }">
+          <div class="g-head" @click="toggle(g)" :title="g.block">
+            <span class="chev">{{ isOpen(g) ? '▾' : '▸' }}</span>
+            <item v-if="g.item" :id="g.item" tooltip :title="tooltip(g)"></item>
+            <span v-else class="noicon">?</span>
+            <span class="g-name">{{ g.name }}</span>
+            <span class="holds">
+              <span v-for="h in g.holds" :key="h" class="hold" :class="h" :title="vellum.t('tilefinder.holds.' + h)">{{ holdIcon(h) }}</span>
+            </span>
+            <span class="mod" :title="g.modId">{{ g.mod }}</span>
+            <span class="g-count">{{ countText(g) }}</span>
+            <span class="g-near"><span class="arrow">{{ g.spotsShown[0].dir }}</span>{{ meters(g.spotsShown[0].d) }}</span>
+            <span class="actions" @click.stop>
+              <button class="mini" v-if="tf.viewers && g.item" @click="vellum.send('recipes', { group: g.key, uses: false })"
+                      :title="vellum.t('tilefinder.gui.recipes')">R</button>
+              <button class="mini" v-if="tf.viewers && g.item" @click="vellum.send('recipes', { group: g.key, uses: true })"
+                      :title="vellum.t('tilefinder.gui.uses')">U</button>
+              <button class="track" @click="vellum.send('track', { group: g.key })"
+                      :title="vellum.t('tilefinder.gui.track_all_tip')">{{ g.count > 1 ? vellum.t('tilefinder.gui.track_all') : vellum.t('tilefinder.gui.track') }}</button>
+            </span>
+          </div>
+
+          <div class="spots" v-if="isOpen(g)">
+            <div class="spot-wrap" v-for="s in g.spotsShown" :key="s.x + ',' + s.y + ',' + s.z">
+              <div class="spot" @click="track(g, s)" :title="vellum.t('tilefinder.gui.track_tip')">
+                <span class="arrow">{{ s.dir }}</span>
+                <span class="dist">{{ meters(s.d) }}</span>
+                <span class="dy" :class="{ up: s.dy > 0, down: s.dy < 0 }">{{ dyText(s.dy) }}</span>
+                <span class="coords">{{ s.x }}, {{ s.y }}, {{ s.z }}</span>
+                <span class="label">{{ spotLabel(s) }}</span>
+                <span class="spacer"></span>
+                <span class="spot-actions" @click.stop>
+                  <button class="mini" v-if="s.members" @click="toggleSpot(g, s)"
+                          :title="vellum.t('tilefinder.gui.members_tip')">{{ isSpotOpen(g, s) ? '−' : '+' }}</button>
+                  <button class="mini" @click="vellum.send('copy', s)" :title="vellum.t('tilefinder.gui.copy')">⧉</button>
+                  <button class="mini star" :class="{ on: s.fav }" @click="vellum.send('fav', s)"
+                          :title="vellum.t('tilefinder.gui.favorite')">{{ s.fav ? '★' : '☆' }}</button>
+                </span>
+              </div>
+              <div class="members" v-if="s.members && isSpotOpen(g, s)">
+                <div class="member" v-for="m in s.members" :key="m.x + ',' + m.y + ',' + m.z"
+                     @click="vellum.send('track', { group: g.key, x: m.x, y: m.y, z: m.z })">
+                  <span class="dist">{{ meters(m.d) }}</span>
+                  <span class="coords">{{ m.x }}, {{ m.y }}, {{ m.z }}</span>
+                  <span class="label">{{ m.name ? '“' + m.name + '”' : (m.parts > 1 ? vellum.t('tilefinder.gui.double') : '') }}</span>
+                  <span class="spacer"></span>
+                  <button class="mini star" :class="{ on: m.fav }" @click.stop="vellum.send('fav', m)">{{ m.fav ? '★' : '☆' }}</button>
+                </div>
+                <div class="more" v-if="s.count > s.members.length">{{ vellum.t('tilefinder.gui.more', s.count - s.members.length) }}</div>
+              </div>
+            </div>
+            <div class="more" v-if="g.more > 0">{{ vellum.t('tilefinder.gui.more', g.more) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <span class="hint">{{ vellum.t('tilefinder.gui.hint') }}</span>
+        <span class="spacer"></span>
+        <button v-if="tf.tracking" @click="vellum.send('clear', true); tf.tracking = false">{{ vellum.t('tilefinder.gui.stop') }}</button>
+        <button @click="vellum.close()">{{ vellum.t('gui.done') }}</button>
+      </footer>
+    </section>
+
+    <!-- ===================== Settings ===================== -->
+    <section class="settings-tab" v-show="ui.tab === 'settings'">
+      <div class="form">
+        <h2>{{ vellum.t('tilefinder.settings.search') }}</h2>
+        <label class="row">
+          <span>{{ vellum.t('tilefinder.settings.radius') }}</span>
+          <input type="range" min="8" max="256" step="8" v-model.number="form.radius">
+          <span class="num">{{ form.radius }}</span>
+        </label>
+        <label class="row check">
+          <input type="checkbox" v-model="form.mergeConnected">
+          <span>{{ vellum.t('tilefinder.settings.merge') }}</span>
+        </label>
+        <label class="row check">
+          <input type="checkbox" v-model="form.showDecorative">
+          <span>{{ vellum.t('tilefinder.settings.decorative') }}</span>
+        </label>
+
+        <h2>{{ vellum.t('tilefinder.settings.highlight') }}</h2>
+        <label class="row check">
+          <input type="checkbox" v-model="form.beam">
+          <span>{{ vellum.t('tilefinder.settings.beam') }}</span>
+        </label>
+        <div class="row colors">
+          <span>{{ vellum.t('tilefinder.settings.colors') }}</span>
+          <label class="swatch" v-for="c in colorFields" :key="c.key" :title="vellum.t(c.label)">
+            <span class="chip-color" :style="{ background: validColor(form[c.key]) ? form[c.key] : '#000' }"></span>
+            <input type="text" maxlength="7" v-model.trim="form[c.key]" :class="{ bad: !validColor(form[c.key]) }">
+          </label>
+        </div>
+        <label class="row">
+          <span>{{ vellum.t('tilefinder.settings.helix_radius') }}</span>
+          <input type="range" min="0" max="1" step="0.05" v-model.number="form.helixRadius">
+          <span class="num">{{ form.helixRadius.toFixed(2) }}</span>
+        </label>
+        <label class="row">
+          <span>{{ vellum.t('tilefinder.settings.helix_speed') }}</span>
+          <input type="range" min="0" max="2" step="0.1" v-model.number="form.helixSpeed">
+          <span class="num">{{ form.helixSpeed.toFixed(1) }}</span>
+        </label>
+        <label class="row">
+          <span>{{ vellum.t('tilefinder.settings.arc') }}</span>
+          <input type="range" min="0" max="20" step="0.5" v-model.number="form.arc">
+          <span class="num">{{ form.arc.toFixed(1) }}</span>
+        </label>
+        <label class="row">
+          <span>{{ vellum.t('tilefinder.settings.arrive') }}</span>
+          <input type="range" min="0" max="16" step="0.5" v-model.number="form.arriveDistance">
+          <span class="num">{{ form.arriveDistance === 0 ? vellum.t('tilefinder.settings.never') : form.arriveDistance.toFixed(1) }}</span>
+        </label>
+        <label class="row check">
+          <input type="checkbox" v-model="form.hud">
+          <span>{{ vellum.t('tilefinder.settings.hud') }}</span>
+        </label>
+
+        <h2>{{ vellum.t('tilefinder.settings.types') }}</h2>
+        <p class="note">{{ vellum.t('tilefinder.settings.types_note') }}</p>
+        <label class="col">
+          <span>{{ vellum.t('tilefinder.settings.hidden') }}</span>
+          <textarea rows="2" v-model="form.hiddenText" placeholder="mymod:conveyor"></textarea>
+        </label>
+        <label class="col">
+          <span>{{ vellum.t('tilefinder.settings.decorative_types') }}</span>
+          <textarea rows="2" v-model="form.decorativeText" placeholder="mymod:lamp"></textarea>
+        </label>
+      </div>
+      <footer>
+        <span class="saved" v-show="ui.saved" role="status">{{ vellum.t('tilefinder.settings.saved') }}</span>
+        <span class="spacer"></span>
+        <button @click="resetForm()">{{ vellum.t('tilefinder.settings.revert') }}</button>
+        <button @click="save()" :disabled="!formValid()">{{ vellum.t('tilefinder.settings.save') }}</button>
+        <button @click="vellum.close()">{{ vellum.t('gui.done') }}</button>
+      </footer>
+    </section>
+  </main>
+
+  <script src="finder.js"></script>
+</body>
+</html>

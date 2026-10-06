@@ -1,0 +1,93 @@
+plugins {
+    id 'multiloader-loader'
+    id 'net.neoforged.moddev'
+}
+
+neoForge {
+    version = neoforge_version
+    accessTransformers.from(stonecutter.process(rootProject.file('common/src/main/resources/META-INF/accesstransformer.cfg'),
+            'build/stonecutter-processed/accesstransformer.cfg'))
+    runs {
+        configureEach {
+            systemProperty('neoforge.enabledGameTestNamespaces', mod_id)
+            // REI still uses @OnlyIn.
+            systemProperty('neoforge.warnings.onlyin.hide', 'true')
+            ideName = "NeoForge ${it.name.capitalize()} (${project.path})"
+        }
+        client {
+            client()
+            gameDirectory = this.mkdir(this.file('runs/client'))
+            // `-Pautopilot`: builds a test world full of block entities, drives the finder, screenshots it and quits.
+            if (project.hasProperty('autopilot')) systemProperty('tilefinder.autopilot', project.property('autopilot').toString() ?: 'true')
+        }
+        gameTestServer {
+            type = 'gameTestServer'
+            gameDirectory = this.mkdir(this.file('runs/gametest'))
+        }
+        server {
+            server()
+            this.file('runs/server').createParentDirectories()
+            gameDirectory = this.mkdir(this.file('runs/server'))
+            programArgument('--nogui')
+        }
+    }
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+configurations {
+    // Mods loaded in dev runs only (recipe viewers), never published as dependencies. Loom has its own.
+    localRuntime
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+dependencies {
+    // Vellum ships inside TileFinder's jar. A newer standalone Vellum wins over the nested one.
+    jarJar(implementation("dev.vellum:vellum-neoforge-${minecraft_version}")) {
+        version {
+            strictly "[${vellum_version},)"
+            prefer vellum_version
+        }
+    }
+    compileOnly("mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}")
+    // The full REI jar: on 26.x its @REIPluginClient annotation isn't in the API jar.
+    compileOnly("me.shedaniel:RoughlyEnoughItems-neoforge:${rei_version}") { transitive = false }
+    compileOnly("me.shedaniel:RoughlyEnoughItems-api-neoforge:${rei_version}") { transitive = false }
+    compileOnly("dev.architectury:architectury-neoforge:${architectury_version}") { transitive = false }
+    compileOnly("me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}") { transitive = false }
+    // Dev runs: JEI by default, `-Prei` for REI instead, `-PnoViewers` for neither.
+    if (!project.hasProperty('noViewers')) {
+        if (project.hasProperty('rei')) {
+            localRuntime("me.shedaniel:RoughlyEnoughItems-neoforge:${rei_version}")
+        } else {
+            localRuntime("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}") { transitive = false }
+        }
+    }
+}
+
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements'].each { variant ->
+    configurations.named(variant) {
+        attributes {
+            attribute(loaderAttribute, 'neoforge')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName, it.getTaskName(null, 'jarJar')].each { variant ->
+        configurations.named(variant) {
+            attributes {
+                attribute(loaderAttribute, 'neoforge')
+            }
+        }
+    }
+}
+
+if (!stonecutter.current.isActive) {
+    tasks.named('createMinecraftArtifacts') {
+        dependsOn(tasks.named('stonecutterGenerate'))
+    }
+}
