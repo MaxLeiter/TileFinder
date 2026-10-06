@@ -44,6 +44,14 @@ configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
+repositories {
+    maven {
+        name = 'Fabric'
+        url = uri('https://maven.fabricmc.net')
+        content { includeGroup('net.fabricmc') }
+    }
+}
+
 dependencies {
     // A required mod of its own, not bundled: players get Vellum's fixes without a TileFinder release.
     implementation("dev.vellum:vellum-neoforge-${minecraft_version}:${vellum_version}")
@@ -53,14 +61,14 @@ dependencies {
     compileOnly("me.shedaniel:RoughlyEnoughItems-api-neoforge:${rei_version}") { transitive = false }
     compileOnly("dev.architectury:architectury-neoforge:${architectury_version}") { transitive = false }
     compileOnly("me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}") { transitive = false }
-    // Dev runs: JEI by default, `-Prei` for REI instead, `-PnoViewers` for neither.
-    if (!project.hasProperty('noViewers')) {
-        if (project.hasProperty('rei')) {
-            localRuntime("me.shedaniel:RoughlyEnoughItems-neoforge:${rei_version}")
-        } else {
-            localRuntime("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}") { transitive = false }
-        }
-    }
+    // REI's API is annotated with Fabric's @Environment(EnvType.CLIENT); without the enum javac warns at every use.
+    compileOnly("net.fabricmc:fabric-loader:${fabric_loader_version}") { transitive = false }
+    // EMI has no 26.x builds.
+    if (stonecutter.current.parsed < '26') compileOnly("dev.emi:emi-neoforge:${emi_version}:api") { transitive = false }
+    // Recipe viewers in dev runs, opt-in so builds and GameTests run without them: `-Pjei`, `-Prei`, `-Pemi` (1.21.1).
+    if (project.hasProperty('jei')) localRuntime("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}") { transitive = false }
+    if (project.hasProperty('rei')) localRuntime("me.shedaniel:RoughlyEnoughItems-neoforge:${rei_version}")
+    if (project.hasProperty('emi') && stonecutter.current.parsed < '26') localRuntime("dev.emi:emi-neoforge:${emi_version}") { transitive = false }
 }
 
 def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)

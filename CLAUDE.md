@@ -17,12 +17,13 @@ player to one with a box and a beam. NeoForge + Fabric, Minecraft 26.3 / 26.2 / 
 
 ## Building
 - Gradle needs JDK 25+: `export JAVA_HOME=~/Library/Java/JavaVirtualMachines/temurin-26.jdk/Contents/Home`.
-- Vellum resolves from mavenLocal (`dev.vellum:vellum-<loader>-<mc>:<vellum_version>`): run
-  `./gradlew publishToMavenLocal` in a Vellum checkout first.
+- Vellum (`dev.vellum:vellum-<loader>-<mc>`) comes from https://maven.maxleiter.com; `vellum_version` is per
+  Minecraft version in stonecutter.properties.toml. An unreleased Vellum resolves from mavenLocal
+  (`./gradlew publishToMavenLocal` in a Vellum checkout). Vellum is a required mod, never bundled.
 - `./gradlew build` builds every version and loader. One target: `./gradlew :fabric:26.2:build`.
-  Loom resolves mods while configuring, so a missing Vellum fails configuration of every project; add
-  `--configure-on-demand` to only configure what you run.
-- Run: `./gradlew :neoforge:26.3:runClient` (`-Prei` for REI instead of JEI, `-PnoViewers` for neither).
+  Loom resolves mods while configuring, so a missing artifact fails configuration of every project; add
+  `--configure-on-demand` to only configure what you run. Gradle writes ~/.gradle: run it outside the sandbox.
+- Run: `./gradlew :neoforge:26.3:runClient`; add `-Pjei`, `-Prei` or `-Pemi` (1.21.1) to load a recipe viewer.
 - Jars: `<loader>/versions/<mc>/build/libs/tilefinder-<loader>-<mc>-<version>.jar`.
 
 ## Conventions

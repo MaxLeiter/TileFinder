@@ -40,6 +40,13 @@ repositories {
         }
     }
     exclusiveContent {
+        forRepository { maven { name = 'TerraformersMC'; url = uri('https://maven.terraformersmc.com/releases') } }
+        filter {
+            includeGroup('com.terraformersmc')
+            includeGroup('dev.emi')
+        }
+    }
+    exclusiveContent {
         forRepository { maven { name = 'Shedaniel'; url = uri('https://maven.shedaniel.me') } }
         filter {
             includeGroupAndSubgroups('me.shedaniel')

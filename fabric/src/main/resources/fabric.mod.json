@@ -18,7 +18,8 @@
     "client": ["com.maxleiter.tilefinder.fabric.client.TileFinderFabricClient"],
     "modmenu": ["com.maxleiter.tilefinder.fabric.client.TileFinderModMenu"],
     "jei_mod_plugin": ["com.maxleiter.tilefinder.compat.jei.TileFinderJeiPlugin"],
-    "rei_client": ["com.maxleiter.tilefinder.compat.rei.TileFinderReiPlugin"]
+    "rei_client": ["com.maxleiter.tilefinder.compat.rei.TileFinderReiPlugin"],
+    "emi": ["com.maxleiter.tilefinder.compat.emi.TileFinderEmiPlugin"]
   },
   "accessWidener": "${mod_id}.accesswidener",
   "depends": {
@@ -31,6 +32,7 @@
   "suggests": {
     "jei": "*",
     "roughlyenoughitems": "*",
+    "emi": "*",
     "modmenu": "*"
   }
 }

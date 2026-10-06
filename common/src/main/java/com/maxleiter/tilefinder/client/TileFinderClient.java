@@ -39,7 +39,8 @@ public final class TileFinderClient {
      * the key. Key presses meant as typing are left alone.
      */
     public static boolean onScreenKey(Screen screen) {
-        if (screen instanceof ChatScreen || screen.getFocused() instanceof EditBox) return false;
+        // In the finder itself the key closes it (FinderPage's onKey), and typing goes to its search box.
+        if (FinderPage.isFinder(screen) || screen instanceof ChatScreen || screen.getFocused() instanceof EditBox) return false;
         double mouseX = McClient.mouseX();
         double mouseY = McClient.mouseY();
         ItemStack stack = RecipeViewers.hovered(screen, mouseX, mouseY);
