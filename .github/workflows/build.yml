@@ -1,30 +1,49 @@
 name: Build
 
-on: [push, pull_request]
+on:
+  push:
+    branches: ['**']
+    tags-ignore: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      # Gradle provisions the per-version toolchains (Java 25 for 26.x, Java 21 for 1.21.1) itself; this JDK runs Gradle.
+      - uses: actions/setup-java@v5
         with:
-          fetch-depth: 0
-          fetch-tags: true
+          distribution: temurin
+          java-version: 25
 
-      - name: Setup JDK 21
-        uses: actions/setup-java@v4
+      - uses: gradle/actions/setup-gradle@v5
+
+      # Every Minecraft version on both loaders, and Fabric's GameTests.
+      - run: ./gradlew build --stacktrace
+
+      # NeoForge's GameTests aren't part of build.
+      - run: ./gradlew runGameTestServer --stacktrace
+
+      - if: failure()
+        uses: actions/upload-artifact@v5
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          name: test-reports
+          path: '**/build/reports/tests/'
+          if-no-files-found: ignore
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      # This is needed to be able to run ./gradlew below
-      # You can run `git update-index --chmod +x gradlew` then remove this step.
-      - name: Make Gradle wrapper executable
-        run: chmod +x ./gradlew
-
-      - name: Build with Gradle
-        run: ./gradlew build
+      - uses: actions/upload-artifact@v5
+        with:
+          name: jars
+          path: |
+            neoforge/versions/*/build/libs/*.jar
+            fabric/versions/*/build/libs/*.jar
+            !**/*-sources.jar
+          if-no-files-found: warn

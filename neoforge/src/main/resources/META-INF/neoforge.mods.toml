@@ -8,7 +8,7 @@ modId = "${mod_id}"
 version = "${version}"
 displayName = "${mod_name}"
 displayURL = "${homepage}"
-logoFile = "assets/tilefinder/icon.png"
+${neoforge_logo_key} = "assets/tilefinder/icon.png"
 credits = "${credits}"
 authors = "${mod_author}"
 description = '''${description}'''
@@ -30,7 +30,6 @@ versionRange = "${minecraft_version_range}"
 ordering = "NONE"
 side = "BOTH"
 
-# Bundled in the jar; listed so a standalone copy older than this is refused.
 [[dependencies.${mod_id}]]
 modId = "vellum"
 type = "required"

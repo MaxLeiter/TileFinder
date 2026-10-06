@@ -45,13 +45,8 @@ configurations {
 }
 
 dependencies {
-    // Vellum ships inside TileFinder's jar. A newer standalone Vellum wins over the nested one.
-    jarJar(implementation("dev.vellum:vellum-neoforge-${minecraft_version}")) {
-        version {
-            strictly "[${vellum_version},)"
-            prefer vellum_version
-        }
-    }
+    // A required mod of its own, not bundled: players get Vellum's fixes without a TileFinder release.
+    implementation("dev.vellum:vellum-neoforge-${minecraft_version}:${vellum_version}")
     compileOnly("mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}")
     // The full REI jar: on 26.x its @REIPluginClient annotation isn't in the API jar.
     compileOnly("me.shedaniel:RoughlyEnoughItems-neoforge:${rei_version}") { transitive = false }
