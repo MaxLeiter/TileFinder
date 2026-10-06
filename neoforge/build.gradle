@@ -44,6 +44,14 @@ configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
+repositories {
+    maven {
+        name = 'Fabric'
+        url = uri('https://maven.fabricmc.net')
+        content { includeGroup('net.fabricmc') }
+    }
+}
+
 dependencies {
     // A required mod of its own, not bundled: players get Vellum's fixes without a TileFinder release.
     implementation("dev.vellum:vellum-neoforge-${minecraft_version}:${vellum_version}")
@@ -53,6 +61,8 @@ dependencies {
     compileOnly("me.shedaniel:RoughlyEnoughItems-api-neoforge:${rei_version}") { transitive = false }
     compileOnly("dev.architectury:architectury-neoforge:${architectury_version}") { transitive = false }
     compileOnly("me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}") { transitive = false }
+    // REI's API is annotated with Fabric's @Environment(EnvType.CLIENT); without the enum javac warns at every use.
+    compileOnly("net.fabricmc:fabric-loader:${fabric_loader_version}") { transitive = false }
     // EMI has no 26.x builds.
     if (stonecutter.current.parsed < '26') compileOnly("dev.emi:emi-neoforge:${emi_version}:api") { transitive = false }
     // Dev runs: JEI by default, `-Prei` for REI instead (`-Pemi` for EMI on 1.21.1), `-PnoViewers` for neither.
