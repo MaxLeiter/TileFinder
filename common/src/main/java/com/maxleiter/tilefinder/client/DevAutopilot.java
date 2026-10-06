@@ -1,6 +1,12 @@
 package com.maxleiter.tilefinder.client;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.Comparator;
+import java.util.stream.Stream;
 import java.util.Deque;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
@@ -8,6 +14,7 @@ import java.util.function.Consumer;
 
 import com.google.gson.JsonElement;
 import com.maxleiter.tilefinder.TileFinder;
+import com.maxleiter.tilefinder.scan.Finder;
 
 import dev.vellum.mod.client.VellumAutomation;
 import net.minecraft.client.Minecraft;
@@ -53,6 +60,7 @@ public final class DevAutopilot {
             if (!(McClient.screen() instanceof TitleScreen || McClient.screen() instanceof AccessibilityOnboardingScreen)) return;
             started = true;
             log("creating world " + WORLD);
+            deleteWorld(mc);
             mc.options.onboardingAccessibilityFinished();
             // The window may never have focus while the autopilot runs.
             mc.options.pauseOnLostFocus = false;
@@ -100,9 +108,21 @@ public final class DevAutopilot {
         }
     }
 
+    /** Starts from a fresh world: an earlier run's scene would still be standing in the old one. */
+    private static void deleteWorld(Minecraft mc) {
+        Path dir = mc.gameDirectory.toPath().resolve("saves").resolve(WORLD);
+        if (!Files.exists(dir)) return;
+        try (Stream<Path> files = Files.walk(dir)) {
+            for (Path file : files.sorted(Comparator.reverseOrder()).toList()) Files.delete(file);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Cannot delete the old autopilot world " + dir, e);
+        }
+    }
+
     // ---- The script ----
 
     private static void plan(Minecraft mc) {
+        until("the player stands on the ground", () -> mc.player.onGround(), 1);
         steps.add(() -> {
             origin = mc.player.blockPosition();
             log("player on the ground at " + origin.toShortString());
@@ -112,11 +132,45 @@ public final class DevAutopilot {
             mc.resizeGui();
             //?} else
             /*mc.resizeDisplay();*/
+            // The scene depends on where the player stands: its commands go to the front of the queue.
+            String[] commands = scene();
+            steps.addFirst(() -> wait = 40);
+            for (int i = commands.length - 1; i >= 0; i--) {
+                String command = commands[i];
+                steps.addFirst(() -> {
+                    mc.player.connection.sendCommand(command);
+                    wait = 2;
+                });
+            }
             wait = 5;
         });
-        for (String command : scene()) command(mc, command);
-        steps.add(() -> wait = 40);
 
+        steps.add(() -> {
+            // The finder's own search uses what the client knows of each chest's name: compare with the server.
+            Finder.Options options = new Finder.Options(32, false, Settings.get().kinds());
+            BlockPos namedPos = origin.offset(-4, 0, 4);
+            // The setblock command's block entity data did not name it (tried CustomName and components): name it as a
+            // player would, on the server thread.
+            mc.getSingleplayerServer().executeBlocking(() -> {
+                var level = mc.getSingleplayerServer().overworld();
+                var be = level.getBlockEntity(namedPos);
+                be.applyComponents(net.minecraft.core.component.DataComponentMap.builder()
+                        .set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, net.minecraft.network.chat.Component.literal("Diamonds")).build(),
+                        net.minecraft.core.component.DataComponentPatch.EMPTY);
+                be.setChanged();
+                level.sendBlockUpdated(namedPos, be.getBlockState(), be.getBlockState(), 3);
+            });
+            Object[] found = new Object[1];
+            mc.getSingleplayerServer().executeBlocking(() -> found[0] = mc.getSingleplayerServer().overworld().getBlockEntity(namedPos));
+            Object serverBe = found[0];
+            log("the chest meant to be named at " + namedPos.toShortString() + ": server " + serverBe + ", client " + mc.level.getBlockEntity(namedPos)
+                    + (serverBe instanceof net.minecraft.world.Nameable n ? ", server name " + n.getCustomName() : "")
+                    + (mc.level.getBlockEntity(namedPos) instanceof net.minecraft.world.Nameable c ? ", client name " + c.getCustomName() : ""));
+            log("client sees chest names: " + names(Finder.find(mc.level, mc.player.blockPosition(), options)));
+            java.util.List<Finder.Group>[] onServer = new java.util.List[1];
+            mc.getSingleplayerServer().executeBlocking(() -> onServer[0] = Finder.find(mc.getSingleplayerServer().overworld(), mc.player.blockPosition(), options));
+            log("server sees chest names: " + names(onServer[0]));
+        });
         steps.add(() -> {
             log("opening the finder");
             FinderPage.open(null, "list");
@@ -180,21 +234,46 @@ public final class DevAutopilot {
             wait = 3;
         });
         shot(mc, "beam");
+
+        // A wall between the player and the chests, looking at it: the boxes and the beam show through it.
+        steps.add(() -> {
+            mc.player.connection.sendCommand("fill " + (origin.getX() - 12) + " " + origin.getY() + " " + (origin.getZ() + 2) + " "
+                    + (origin.getX() + 12) + " " + (origin.getY() + 3) + " " + (origin.getZ() + 2) + " stone");
+            mc.player.connection.sendCommand("tp @s ~ ~ ~ 0 10");
+            wait = 40;
+        });
+        shot(mc, "beam-through-wall");
+
+        // The server-side chest menu, for players without the mod (as an op).
+        steps.add(() -> {
+            mc.player.connection.sendCommand("tilefinder 32");
+            wait = 30;
+        });
+        steps.add(() -> check(McClient.screen() != null, "/tilefinder 32 opened a screen"));
+        shot(mc, "tilefinder-server-menu");
+    }
+
+    private static String names(java.util.List<Finder.Group> groups) {
+        StringBuilder out = new StringBuilder();
+        for (Finder.Group group : groups) {
+            for (Finder.Spot spot : group.spots()) {
+                for (Finder.Member member : spot.members()) {
+                    if (member.customName() != null) out.append(member.pos().toShortString()).append('=').append(member.customName().getString()).append(' ');
+                }
+            }
+        }
+        return out.toString();
     }
 
     /** The scene: everything south of the player, in a 13 by 8 patch, as /setblock and /fill commands. */
     private static String[] scene() {
         int x = origin.getX(), y = origin.getY(), z = origin.getZ();
-        String named = //? if >=26
-                "{CustomName:\"Diamonds\"}";
-                //? if <26
-                /*"{CustomName:'\"Diamonds\"'}";*/
         return new String[]{
                 "time set noon", "weather clear",
                 // A double chest, a single chest, and a chest renamed "Diamonds".
                 set(x - 1, y, z + 4, "chest[facing=south,type=right]"), set(x, y, z + 4, "chest[facing=south,type=left]"),
                 set(x + 3, y, z + 4, "chest[facing=south]"),
-                set(x - 4, y, z + 4, "chest[facing=south]" + named),
+                set(x - 4, y, z + 4, "chest[facing=south]"),
                 // Machines.
                 set(x + 5, y, z + 3, "furnace[facing=west]"), set(x + 5, y, z + 5, "blast_furnace[facing=west]"),
                 set(x + 5, y, z + 7, "smoker[facing=west]"), set(x - 6, y, z + 3, "enchanting_table"),
@@ -213,13 +292,6 @@ public final class DevAutopilot {
     }
 
     // ---- Steps ----
-
-    private static void command(Minecraft mc, String command) {
-        steps.add(() -> {
-            mc.player.connection.sendCommand(command);
-            wait = 2;
-        });
-    }
 
     private static void onPage(String what, Consumer<VellumAutomation> action) {
         Optional<VellumAutomation> page = VellumAutomation.screen();
@@ -247,6 +319,8 @@ public final class DevAutopilot {
     }
 
     private static void shoot(Minecraft mc, String name) {
+        // The pointer rests on the last thing clicked: no hover or tooltip in the shot.
+        steps.add(() -> VellumAutomation.screen().ifPresent(VellumAutomation::leave));
         // A page keeps animating (the caret, hover); a few ticks after settling are enough.
         steps.add(() -> wait = 10);
         shot(mc, name);
