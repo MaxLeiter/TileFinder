@@ -22,10 +22,15 @@ java {
 }
 
 repositories {
-    // Vellum isn't on a public maven: publish it locally from a Vellum checkout (CI does this from its tag).
-    exclusiveContent {
-        forRepository { mavenLocal() }
-        filter { includeGroup('dev.vellum') }
+    // Vellum releases are on maven.maxleiter.com; an unreleased one comes from mavenLocal (`./gradlew
+    // publishToMavenLocal` in a Vellum checkout).
+    maven {
+        name = 'MaxLeiter'
+        url = uri('https://maven.maxleiter.com')
+        content { includeGroup('dev.vellum') }
+    }
+    mavenLocal {
+        content { includeGroup('dev.vellum') }
     }
     exclusiveContent {
         forRepository { maven { name = 'BlameJared'; url = uri('https://maven.blamejared.com') } }
@@ -81,6 +86,7 @@ processResources {
             'issues'                       : issues,
             'neoforge_version'             : neoforge_version,
             'neoforge_loader_version_range': neoforge_loader_version_range,
+            'neoforge_logo_key'            : neoforge_logo_key,
             'credits'                      : credits,
             'java_version'                 : java_version,
             'vellum_version'               : vellum_version,

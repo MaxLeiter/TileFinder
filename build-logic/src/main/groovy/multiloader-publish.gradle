@@ -74,8 +74,7 @@ publishMods {
         accessToken = providers.environmentVariable('MODRINTH_TOKEN')
         minecraftVersions.addAll(gameVersions)
         if (loader == 'fabric') requires('fabric-api')
-        // Vellum ships inside the jar (jar-in-jar).
-        embeds { id = 'VubPz2qI' }
+        requires { id = 'VubPz2qI' }   // Vellum
         optional('jei', 'rei')
     }
 
@@ -86,7 +85,7 @@ publishMods {
         client = true
         server = true
         if (loader == 'fabric') requires('fabric-api')
-        embeds('vellum-gui')
+        requires('vellum-gui')
         optional('jei', 'roughly-enough-items')
     }
 }
