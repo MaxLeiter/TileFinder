@@ -65,7 +65,7 @@ export JAVA_HOME=/path/to/jdk-25
 ```
 
 Jars land in `<loader>/versions/<minecraft>/build/libs/`. `./gradlew :neoforge:26.3:runClient` (or any loader and
-version) starts a dev client with JEI; `-Prei` swaps in REI, `-Pemi` EMI on 1.21.1.
+version) starts a dev client; `-Pjei`, `-Prei` or `-Pemi` (1.21.1) adds a recipe viewer.
 
 ## Releasing
 

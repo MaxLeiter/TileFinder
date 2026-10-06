@@ -38,15 +38,12 @@ dependencies {
         add(mod('compileOnly'), "dev.emi:emi-fabric:${emi_version}:api") { transitive = false }
     }
     add(mod('compileOnly'), "com.terraformersmc:modmenu:${modmenu_version}") { transitive = false }
-    if (!project.hasProperty('noViewers')) {
-        if (project.hasProperty('rei')) {
-            add(mod('localRuntime'), "me.shedaniel:RoughlyEnoughItems-fabric:${rei_version}")
-        } else if (project.hasProperty('emi') && obfuscated) {
-            add(mod('localRuntime'), "dev.emi:emi-fabric:${emi_version}") { transitive = false }
-        } else {
-            add(mod('localRuntime'), "mezz.jei:jei-${minecraft_version}-fabric:${jei_version}")
-        }
-    }
+    // Recipe viewers in dev runs, opt-in so builds and GameTests run without them: `-Pjei`, `-Prei`, `-Pemi` (1.21.1).
+    if (project.hasProperty('jei')) add(mod('localRuntime'), "mezz.jei:jei-${minecraft_version}-fabric:${jei_version}")
+    // JEI 1.21.1's Fabric pom doesn't list its config library.
+    if (project.hasProperty('jei') && obfuscated) add(mod('localRuntime'), "net.mezzdev.config:mezz_config-1.21.1-fabric:0.6.8")
+    if (project.hasProperty('rei')) add(mod('localRuntime'), "me.shedaniel:RoughlyEnoughItems-fabric:${rei_version}")
+    if (project.hasProperty('emi') && obfuscated) add(mod('localRuntime'), "dev.emi:emi-fabric:${emi_version}") { transitive = false }
 }
 
 fabricApi {
