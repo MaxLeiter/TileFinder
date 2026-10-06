@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "tilefinder:custom_name",
+  "max_ticks": 40,
+  "setup_ticks": 1,
+  "structure": "tilefinder:test/arena"
+}
