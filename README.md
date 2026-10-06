@@ -21,6 +21,8 @@ branch, and the NeoForge-only 1.21.1 version (0.4) on `1.21.1/neoforge`.
 - **`\`** opens the finder. Everything with a block entity within the radius is listed, nearest first, grouped by
   kind: "Furnace ×12", "Universal Cable · 340 in 3", each with its mod and the direction and distance to the nearest.
 - **Search** by name, by mod (`@mekanism`), or by a container's custom name (a chest you renamed "Diamonds").
+  Vanilla doesn't send those names to clients, so on a multiplayer server only names a mod syncs are known; in
+  singleplayer all are.
   **Enter** tracks the nearest match.
 - **Filters**: everything, blocks that hold items, fluids or energy (whatever the mod exposes to its loader's
   transfer API), your starred spots, and decoration.
@@ -36,12 +38,13 @@ branch, and the NeoForge-only 1.21.1 version (0.4) on `1.21.1/neoforge`.
 
 ### What counts as one thing
 
-- A double chest is one chest; a bed is one bed; a two-tall block is one block.
+- A double chest is one chest, a two-tall block is one block, and on 1.21.1 a bed is one bed (beds have no block
+  entity from 26.1 on, so they aren't listed there).
 - Touching blocks of the same kind are merged into one place: a run of cable or pipe is one network, a wall of
   barrels is one storage wall. Expand it to see every block. You can turn this off.
 - Wall signs, wall heads and wall banners are listed with their items, so all oak signs are one group.
-- Moving pistons are never listed. Signs, hanging signs, banners, heads, beds, decorated pots, bells and copper golem
-  statues are decoration: hidden from "All" unless you ask for them, always under "Decor".
+- Moving pistons are never listed. Signs, hanging signs, banners, heads, beds (1.21.1), decorated pots, bells and
+  copper golem statues are decoration: hidden from "All" unless you ask for them, always under "Decor".
 - Packs and servers can extend both lists with the block entity type tags `tilefinder:hidden` and
   `tilefinder:decorative` (`data/<namespace>/tags/block_entity_type/…`); players can add type ids in the settings.
 

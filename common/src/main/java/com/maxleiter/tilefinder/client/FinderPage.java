@@ -147,10 +147,11 @@ public final class FinderPage {
         List<Finder.Group> groups = player == null || mc.level == null ? List.of()
                 : Finder.find(mc.level, player.blockPosition(), new Finder.Options(radius, settings.mergeConnected, settings.kinds()));
         groupsByKey.clear();
+        Map<BlockPos, String> names = ServerNames.lookup(groups);
         JsonArray groupsJson = new JsonArray();
         for (Finder.Group group : groups) {
             groupsByKey.put(group.key(), group);
-            groupsJson.add(groupJson(group, player));
+            groupsJson.add(groupJson(group, player, names));
         }
         JsonObject tf = new JsonObject();
         tf.addProperty("radius", radius);
@@ -167,7 +168,7 @@ public final class FinderPage {
         return tf;
     }
 
-    private JsonObject groupJson(Finder.Group group, LocalPlayer player) {
+    private JsonObject groupJson(Finder.Group group, LocalPlayer player, Map<BlockPos, String> names) {
         Vec3 eye = player.getEyePosition();
         JsonObject json = new JsonObject();
         json.addProperty("key", group.key());
@@ -187,13 +188,13 @@ public final class FinderPage {
 
         JsonArray spots = new JsonArray();
         List<Finder.Spot> list = group.spots();
-        for (int i = 0; i < Math.min(list.size(), SPOTS_PER_GROUP); i++) spots.add(spotJson(list.get(i), player, eye));
+        for (int i = 0; i < Math.min(list.size(), SPOTS_PER_GROUP); i++) spots.add(spotJson(list.get(i), player, eye, names));
         json.add("spots", spots);
         json.addProperty("more", Math.max(0, list.size() - SPOTS_PER_GROUP));
         return json;
     }
 
-    private JsonObject spotJson(Finder.Spot spot, LocalPlayer player, Vec3 eye) {
+    private JsonObject spotJson(Finder.Spot spot, LocalPlayer player, Vec3 eye, Map<BlockPos, String> serverNames) {
         BlockPos pos = spot.pos();
         Vec3 to = Vec3.atCenterOf(pos).subtract(eye);
         JsonObject json = new JsonObject();
@@ -209,7 +210,7 @@ public final class FinderPage {
         JsonArray members = new JsonArray();
         for (int i = 0; i < spot.members().size(); i++) {
             Finder.Member member = spot.members().get(i);
-            String name = member.customName() == null ? null : member.customName().getString();
+            String name = member.customName() != null ? member.customName().getString() : serverName(member, serverNames);
             if (name != null) names.add(name);
             if (spot.members().size() > 1 && i < MEMBERS_PER_SPOT) {
                 JsonObject m = new JsonObject();
@@ -308,6 +309,14 @@ public final class FinderPage {
         double h = request.get("h").getAsDouble();
         if (!(w > 0 && w <= 64 && h > 0 && h <= 64 && Math.abs(x) < 16384 && Math.abs(y) < 16384)) return;
         hovered = new Icon(group.icon().copy(), (int) Math.floor(x), (int) Math.floor(y), (int) Math.ceil(w), (int) Math.ceil(h));
+    }
+
+    private static @Nullable String serverName(Finder.Member member, Map<BlockPos, String> serverNames) {
+        for (BlockPos block : member.blocks()) {
+            String name = serverNames.get(block);
+            if (name != null) return name;
+        }
+        return null;
     }
 
     private static double round1(double value) {
