@@ -93,6 +93,16 @@ function filterGroup(g, parts, chip) {
   if (spots.length === 0) return null;
   const shownGroup = Object.assign({}, g);
   shownGroup.spotsShown = spots;
+  // Found by a spot's name or narrowed to stars: open, so the matching places show.
+  shownGroup.narrowed = loose.length > 0 || chip === 'fav';
+  let members = 0;
+  let blocks = 0;
+  for (let s of spots) {
+    members += s.count;
+    blocks += s.blocks;
+  }
+  shownGroup.shownCount = members;
+  shownGroup.shownBlocks = blocks;
   return shownGroup;
 }
 
@@ -146,9 +156,10 @@ function dyText(dy) {
   return '';
 }
 
+// "×12", or "×214 in 2" when touching blocks were merged into fewer places.
 function countText(g) {
-  if (g.blocks > g.count) return vellum.t('tilefinder.gui.blocks_in', g.blocks, g.spotsShown.length);
-  return '×' + g.count;
+  if (g.spotsShown.length < g.shownCount) return vellum.t('tilefinder.gui.blocks_in', g.shownCount, g.spotsShown.length);
+  return '×' + g.shownCount;
 }
 
 function spotLabel(s) {
@@ -174,6 +185,11 @@ function summary() {
   return vellum.t('tilefinder.gui.summary', spots, tf.groups.length, tf.radius);
 }
 
+function canWiden() {
+  const tf = vellum.data.tf;
+  return !!tf && tf.groups.length === 0 && state.radius < tf.maxRadius;
+}
+
 function emptyText() {
   const tf = vellum.data.tf;
   if (!tf || tf.groups.length === 0) return vellum.t('tilefinder.gui.none', state.radius);
@@ -183,11 +199,11 @@ function emptyText() {
 // ---------------------------------------------------------------- actions
 
 function isOpen(g) {
-  return !!state.open[g.key];
+  return g.narrowed ? state.open[g.key] !== false : !!state.open[g.key];
 }
 
 function toggle(g) {
-  state.open[g.key] = !state.open[g.key];
+  state.open[g.key] = !isOpen(g);
 }
 
 function spotKey(g, s) {
@@ -201,6 +217,15 @@ function isSpotOpen(g, s) {
 function toggleSpot(g, s) {
   const k = spotKey(g, s);
   state.openSpots[k] = !state.openSpots[k];
+}
+
+// Every place of a group, or only the ones the search and filter left.
+function trackGroup(g) {
+  if (g.spotsShown.length === g.spots.length) {
+    vellum.send('track', { group: g.key });
+  } else {
+    vellum.send('track', { group: g.key, spots: g.spotsShown.map(s => [s.x, s.y, s.z]) });
+  }
 }
 
 function track(g, s) {

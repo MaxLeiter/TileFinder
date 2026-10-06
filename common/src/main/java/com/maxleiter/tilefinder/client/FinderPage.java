@@ -2,9 +2,11 @@ package com.maxleiter.tilefinder.client;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -229,15 +231,26 @@ public final class FinderPage {
     }
 
     /**
-     * {"group": key} tracks every spot of a group; {"group": key, "x", "y", "z"} one spot (all its members) or one
-     * member. The page can be replaced by a resource pack, so positions must belong to the last scan.
+     * {"group": key} tracks every spot of a group; {"group": key, "spots": [[x, y, z]...]} some of them (what a search
+     * left); {"group": key, "x", "y", "z"} one spot (all its members) or one member. The page can be replaced by a
+     * resource pack, so positions must belong to the last scan.
      */
     private void track(JsonElement value) {
         JsonObject request = value.getAsJsonObject();
         Finder.Group group = groupsByKey.get(request.get("group").getAsString());
         if (group == null) return;
         List<BlockPos> targets = new ArrayList<>();
-        if (request.has("x")) {
+        if (request.has("spots")) {
+            Set<BlockPos> wanted = new HashSet<>();
+            for (JsonElement element : request.getAsJsonArray("spots")) {
+                JsonArray xyz = element.getAsJsonArray();
+                wanted.add(new BlockPos(xyz.get(0).getAsInt(), xyz.get(1).getAsInt(), xyz.get(2).getAsInt()));
+            }
+            for (Finder.Spot spot : group.spots()) {
+                if (!wanted.contains(spot.pos())) continue;
+                for (Finder.Member member : spot.members()) targets.add(member.pos());
+            }
+        } else if (request.has("x")) {
             BlockPos pos = new BlockPos(request.get("x").getAsInt(), request.get("y").getAsInt(), request.get("z").getAsInt());
             for (Finder.Spot spot : group.spots()) {
                 if (spot.pos().equals(pos)) {

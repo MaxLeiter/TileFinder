@@ -39,7 +39,7 @@
       <div class="chips" role="radiogroup">
         <button v-for="c in chips()" :key="c.id" class="chip" :class="{ on: ui.chip === c.id }"
                 role="radio" :aria-checked="ui.chip === c.id" @click="ui.chip = c.id">
-          {{ c.label }} <span class="count">{{ c.count }}</span>
+          <span>{{ c.label }}</span><span class="count">{{ c.count }}</span>
         </button>
         <span class="spacer"></span>
         <select v-model="ui.sort" aria-label="Sort" :title="vellum.t('tilefinder.gui.sort')">
@@ -54,7 +54,7 @@
         <div class="empty" v-if="shown().length === 0">
           <item id="minecraft:spyglass"></item>
           <div>{{ emptyText() }}</div>
-          <button v-if="ui.radius < tf.maxRadius" @click="widen()">{{ vellum.t('tilefinder.gui.widen') }}</button>
+          <button v-if="canWiden()" @click="widen()">{{ vellum.t('tilefinder.gui.widen') }}</button>
         </div>
 
         <div class="group" v-for="g in shown()" :key="g.key" :class="{ open: isOpen(g) }">
@@ -75,8 +75,8 @@
                       :title="vellum.t('tilefinder.gui.recipes')">R</button>
               <button class="mini" v-if="tf.viewers && g.item" @click="vellum.send('recipes', { group: g.key, uses: true })"
                       :title="vellum.t('tilefinder.gui.uses')">U</button>
-              <button class="track" @click="vellum.send('track', { group: g.key })"
-                      :title="vellum.t('tilefinder.gui.track_all_tip')">{{ g.count > 1 ? vellum.t('tilefinder.gui.track_all') : vellum.t('tilefinder.gui.track') }}</button>
+              <button class="track" @click="trackGroup(g)"
+                      :title="vellum.t('tilefinder.gui.track_all_tip')">{{ g.shownCount > 1 ? vellum.t('tilefinder.gui.track_all') : vellum.t('tilefinder.gui.track') }}</button>
             </span>
           </div>
 

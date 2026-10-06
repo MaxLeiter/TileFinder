@@ -29,9 +29,9 @@
   "tilefinder.gui.more": "and %s more",
   "tilefinder.gui.hint": "Click to track · Enter tracks the nearest match",
   "tilefinder.gui.stop": "Stop tracking",
-  "tilefinder.gui.blocks_in": "%s in %s",
+  "tilefinder.gui.blocks_in": "×%s in %s",
   "tilefinder.gui.connected": "%s connected",
-  "tilefinder.gui.summary": "%s found · %s kinds · %s blocks",
+  "tilefinder.gui.summary": "%s found · %s kinds · within %s",
   "tilefinder.gui.none": "No block entities within %s blocks.",
   "tilefinder.gui.no_match": "Nothing matches.",
 
