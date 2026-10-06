@@ -1,28 +1,81 @@
 # TileFinder
 
-[CurseForge](https://www.curseforge.com/minecraft/mc-mods/tilefinder)
+[Modrinth](https://modrinth.com/mod/tilefinder) · [CurseForge](https://www.curseforge.com/minecraft/mc-mods/tilefinder)
 
-For neoforge and Minecraft 1.21.1.
+Find the block entities around you: chests, furnaces, machines, tanks, cables, everything a modpack base hides
+behind walls. Press `\`, search, click, and follow the beam.
 
-For the Forge 1.12.1 version, see the `1.12.1/forge` branch.
+| Minecraft | NeoForge | Fabric |
+|---|---|---|
+| 26.3 | 26.3.0.26-beta+ | Loader 0.19.5+, Fabric API |
+| 26.2 | 26.2.0.88+ | Loader 0.19.5+, Fabric API |
+| 1.21.1 | 21.1.255+ | Loader 0.19.5+, Fabric API |
 
-A mod for helping you locate tile/block entities in your world. Useful for modpacks with tons of random machines. Colors and helix are configurable in the mod options.
+TileFinder needs [Vellum](https://github.com/MaxLeiter/vellum), which draws its screen; Modrinth and CurseForge install
+it with TileFinder. [JEI](https://modrinth.com/mod/jei), [REI](https://modrinth.com/mod/rei) and
+[EMI](https://modrinth.com/mod/emi) (1.21.1) are optional. The old Forge 1.12.2 version is on the `1.12/forge`
+branch, and the NeoForge-only 1.21.1 version (0.4) on `1.21.1/neoforge`.
 
-### Server-only / Vanilla Client Support
-TileFinder now bundles [GooeyLibs](https://github.com/NickImpact/GooeyLibs) as a git submodule. When the mod is installed server-side only, vanilla clients (and clients without TileFinder) can use `/tilefinder [radius]` to open a chest-style inventory UI listing nearby block entities. Clicking an entry spawns a burst of particles at each location so players can find them; shift-click teleports to the nearest instance.
+## Using it
 
-GooeyLibs jars are shipped in `./libs` for development; server operators should install the GooeyLibs mod jar alongside TileFinder in production.
+- **`\`** opens the finder. Everything with a block entity within the radius is listed, nearest first, grouped by
+  kind: "Furnace ×12", "Universal Cable · 340 in 3", each with its mod and the direction and distance to the nearest.
+- **Search** by name, by mod (`@mekanism`), or by a container's custom name (a chest you renamed "Diamonds").
+  **Enter** tracks the nearest match.
+- **Filters**: everything, blocks that hold items, fluids or energy (whatever the mod exposes to its loader's
+  transfer API), your starred spots, and decoration.
+- **Click** a group to see each place, or **Track all** to box every one of them. Click a place to track just that
+  one. Tracking draws a box around each target and a beam to the nearest, through walls, with a line on the HUD
+  saying how far and which way. A target drops off when you reach it; **`O`** stops tracking.
+- **Hover an item** in your inventory, a chest, or JEI/REI/EMI's item list and press **`\`** to find that block
+  nearby. In the finder, **R** and **U** open the group's recipes and uses in your recipe viewer.
+- **★** stars a place (per world). **⧉** copies its coordinates.
+- The **Settings** tab (also behind the config button in NeoForge's mod list and Mod Menu) sets the default radius,
+  whether touching blocks merge, whether decoration shows under All, the beam's colours, width, speed and arc, when a
+  target counts as reached, and the HUD line. It's saved to `config/tilefinder.json`.
 
-Repo is based on https://github.com/quat1024/modern-forge-1.12-template, vibecoded with v0 and OpenAI o3.
+### What counts as one thing
 
-<!-- ![screenshot](./screenshot.png) -->
-<!-- a table showing screenshot-1.png and screenhot-2.png -->
+- A double chest is one chest; a bed is one bed; a two-tall block is one block.
+- Touching blocks of the same kind are merged into one place: a run of cable or pipe is one network, a wall of
+  barrels is one storage wall. Expand it to see every block. You can turn this off.
+- Wall signs, wall heads and wall banners are listed with their items, so all oak signs are one group.
+- Moving pistons are never listed. Signs, hanging signs, banners, heads, beds, decorated pots, bells and copper golem
+  statues are decoration: hidden from "All" unless you ask for them, always under "Decor".
+- Packs and servers can extend both lists with the block entity type tags `tilefinder:hidden` and
+  `tilefinder:decorative` (`data/<namespace>/tags/block_entity_type/…`); players can add type ids in the settings.
 
-| Beam                              | GUI                               |
-| --------------------------------- | --------------------------------- |
-| ![screenshot-1](screenshot-1.png) | ![screenshot-2](screenshot-2.png) |
+The client can only see chunks it has loaded, so the radius goes up to your render distance.
+
+### On servers
+
+TileFinder is client-side; a server doesn't need it. If the server has it, `/tilefinder [radius] [filter]` works for
+everyone, including players without the mod: it opens a chest menu of what's nearby (click to be pointed the way with
+particles, right-click to list each place, shift-click to teleport if you're an operator). `/tilefinder clear` stops
+the particles.
+
+## Building
+
+The sources build every Minecraft version on both loaders with [Stonecutter](https://stonecutter.kikugie.dev), in
+the layout Vellum uses. See [CLAUDE.md](CLAUDE.md) for the details.
+
+```bash
+export JAVA_HOME=/path/to/jdk-25
+./gradlew build
+```
+
+Jars land in `<loader>/versions/<minecraft>/build/libs/`. `./gradlew :neoforge:26.3:runClient` (or any loader and
+version) starts a dev client with JEI; `-Prei` swaps in REI, `-Pemi` EMI on 1.21.1.
 
 ## Releasing
 
-1. Run `./bump_release.sh <newVersion>` – this updates `gradle.properties`, commits, tags, and pushes.
-2. GitHub Actions (see `.github/workflows/release.yml`) builds the jar and attaches it to the GitHub Release automatically.
+1. Add a `## <version>` section to [CHANGELOG.md](CHANGELOG.md) and commit it.
+2. `./bump_release.sh <version>`: sets the version, tags `v<version>` and pushes.
+3. The Release workflow builds every jar, makes the GitHub release, and uploads each jar to Modrinth and CurseForge
+   for the Minecraft version it was built for. It needs the `MODRINTH_TOKEN` and `CURSEFORGE_TOKEN` repository
+   secrets; without them it only makes the GitHub release. `./gradlew publishMods -PpublishDryRun` shows what would
+   be uploaded.
+
+## License
+
+MIT
