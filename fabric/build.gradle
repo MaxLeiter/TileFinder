@@ -32,9 +32,8 @@ dependencies {
     add(mod('implementation'), "net.fabricmc:fabric-loader:${fabric_loader_version}")
     add(mod('implementation'), "net.fabricmc.fabric-api:fabric-api:${fabric_version}")
 
-    // Vellum ships inside TileFinder's jar. A newer standalone Vellum wins over the nested one.
+    // A required mod of its own, not bundled: players get Vellum's fixes without a TileFinder release.
     add(mod('implementation'), "dev.vellum:vellum-fabric-${minecraft_version}:${vellum_version}")
-    include("dev.vellum:vellum-fabric-${minecraft_version}:${vellum_version}")
 
     add(mod('compileOnly'), "mezz.jei:jei-${minecraft_version}-fabric-api:${jei_version}")
     add(mod('compileOnly'), "me.shedaniel:RoughlyEnoughItems-api-fabric:${rei_version}") { transitive = false }
