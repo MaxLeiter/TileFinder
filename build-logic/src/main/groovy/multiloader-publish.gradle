@@ -85,7 +85,7 @@ publishMods {
         client = true
         server = true
         if (loader == 'fabric') requires('fabric-api')
-        requires('vellum-gui')
+        if (findProperty('curseforge_vellum_relation')?.toString() == 'true') requires('vellum-gui')
         optional('jei', 'roughly-enough-items')
     }
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+- Needs Vellum 0.5.1 on every Minecraft version. On NeoForge 26.3 this ends the "logoFile is deprecated" warning
+  screen at launch, from both TileFinder and Vellum.
+- First release of the NeoForge jars and the CurseForge files for the rewrite (1.0.0 reached Modrinth for Fabric only).
+  TileFinder needs [Vellum](https://www.curseforge.com/minecraft/mc-mods/vellum-gui): install it too.
+
 ## 1.0.0
 
 A rewrite, for Minecraft 26.3, 26.2 and 1.21.1, on NeoForge and Fabric.
