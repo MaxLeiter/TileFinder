@@ -146,4 +146,5 @@ jobs:
             echo "::warning::MODRINTH_TOKEN or CURSEFORGE_TOKEN isn't set, so nothing was uploaded to Modrinth or CurseForge."
             exit 0
           fi
-          ./gradlew publishMods --stacktrace
+          # --continue: one site refusing an upload must not stop the other uploads.
+          ./gradlew publishMods --continue --stacktrace
