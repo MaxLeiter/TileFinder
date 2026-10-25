@@ -26,7 +26,7 @@ cloth_config_version = "26.3.159"
 modmenu_version = "21.0.0"
 # Vellum, from https://maven.maxleiter.com (see gradle.properties). Each Minecraft version needs the first Vellum
 # release that supports it; newer ones work too.
-vellum_version = "0.5.1"
+vellum_version = "0.6.1"
 
 ["26.2"]
 minecraft_version = "26.2"
@@ -46,7 +46,7 @@ rei_version_range = "[26.2,)"
 architectury_version = "21.1.11"
 cloth_config_version = "26.2.155"
 modmenu_version = "20.0.3"
-vellum_version = "0.5.1"
+vellum_version = "0.6.1"
 
 ["1.21.1"]
 minecraft_version = "1.21.1"
@@ -69,4 +69,4 @@ cloth_config_version = "15.0.130"
 modmenu_version = "11.0.5"
 # EMI has no 26.x builds: https://maven.terraformersmc.com/releases/dev/emi/
 emi_version = "1.1.24+1.21.1"
-vellum_version = "0.5.1"
+vellum_version = "0.6.1"

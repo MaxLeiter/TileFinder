@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.2
+
+- Needs Vellum 0.6.1 on every Minecraft version. On 26.2 and 26.3 the finder's rounded corners and shadows are drawn
+  smooth.
+- The CurseForge files list [Vellum GUI](https://www.curseforge.com/minecraft/mc-mods/vellum-gui) as a required
+  dependency, so the CurseForge app installs it with TileFinder.
+
 ## 1.0.1
 
 - Needs Vellum 0.5.1 on every Minecraft version. On NeoForge 26.3 this ends the "logoFile is deprecated" warning
